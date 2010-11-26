@@ -324,19 +324,21 @@ void    Channel::CleanHintOut (bin64_t pos) {
 
 bin64_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted data
     bin64_t pos = evbuffer_remove_32be(evb);
+    int length = (evbuffer_get_length(evb) < 1024) ?
+        evbuffer_get_length(evb) : 1024;
     if (file().ack_out().get(pos)) {
+	evbuffer_drain(evb, length);
         data_in_ = tintbin(TINT_NEVER,transfer().ack_out().cover(pos));
         return bin64_t::NONE;
     }
-    int length = (evbuffer_get_length(evb) < 1024) ?
-        evbuffer_get_length(evb) : 1024;
     uint8_t *data = evbuffer_pullup(evb, length);
-    evbuffer_drain(evb, length);
     data_in_ = tintbin(NOW,bin64_t::NONE);
     if (!file().OfferData(pos, (char*)data, length)) {
+	evbuffer_drain(evb, length);
         dprintf("%s #%u !data %s\n",tintstr(),id_,pos.str());
         return bin64_t::NONE;
     }
+    evbuffer_drain(evb, length);
     dprintf("%s #%u -data %s\n",tintstr(),id_,pos.str());
     bin64_t cover = transfer().ack_out().cover(pos);
     for(int i=0; i<transfer().cb_installed; i++)
