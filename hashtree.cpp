@@ -36,10 +36,11 @@ void SHA1 (const void *data, size_t length, unsigned char *hash) {
 }
 
 Sha1Hash::Sha1Hash(const Sha1Hash& left, const Sha1Hash& right) {
-    char data[HASHSZ*2];
-    memcpy(data,left.bits,SIZE);
-    memcpy(data+SIZE,right.bits,SIZE);
-    SHA1((unsigned char*)data,SIZE*2,bits);
+    blk_SHA_CTX ctx;
+    blk_SHA1_Init(&ctx);
+    blk_SHA1_Update(&ctx, left.bits,SIZE);
+    blk_SHA1_Update(&ctx, right.bits,SIZE);
+    blk_SHA1_Final(bits, &ctx);
 }
 
 Sha1Hash::Sha1Hash(const char* data, size_t length) {
@@ -54,11 +55,9 @@ Sha1Hash::Sha1Hash(const uint8_t* data, size_t length) {
 
 Sha1Hash::Sha1Hash(bool hex, const char* hash) {
     if (hex) {
-        char hx[3]; hx[2]=0;
         int val;
         for(int i=0; i<SIZE; i++) {
-            strncpy(hx,hash+i*2,2);
-            if (sscanf(hx, "%x", &val)!=1) {
+            if (sscanf(hash+i*2, "%2x", &val)!=1) {
                 memset(bits,0,20);
                 return;
             }
