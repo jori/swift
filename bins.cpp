@@ -198,7 +198,7 @@ iterator::iterator(binmap_t* host_, bin_t start, bool split) {
         history[i] = 1;
     pos = bin_t(host->height,0);
     layer_ = host->height;
-    while (!start.within(pos))
+    while (!pos.contains(start))
         parent();
     while (pos!=start && (deep() || split))
         towards(start);
@@ -322,7 +322,7 @@ void binmap_t::set (bin_t bin, fill_t val) {
     do {
         *i = val;
         i.next();
-    } while (i.bin().within(bin));
+    } while (bin.contains(i.bin()));
     // dump("just set");
 }
 
@@ -422,7 +422,7 @@ void        binmap_t::range_op (binmap_t& mask, bin_t range, bin_op_t op) {
     if (range==bin_t::ALL)
         range = bin_t ( height>mask.height ? height : mask.height, 0 );
     iterator zis(this,range,true), zat(&mask,range,true);
-    while (zis.pos.within(range)) {
+    while (range.contains(zis.pos)) {
         while (zis.deep() || zat.deep()) {
             zis.left(); zat.left();
         }
@@ -530,7 +530,7 @@ bin_t binheap::pop() {
         return bin_t::NONE;
     bin_t ret = heap_[0];
     std::pop_heap(heap_, heap_+filled_--,bincomp);
-    while (filled_ && heap_[0].within(ret))
+    while (filled_ && ret.contains(heap_[0]))
         std::pop_heap(heap_, heap_+filled_--,bincomp);
     return ret;
 }
@@ -539,7 +539,7 @@ void    binheap::extend() {
     std::sort(heap_,heap_+filled_,bincomp_rev);
     int solid = 0;
     for(int i=1; i<filled_; i++)
-        if (!heap_[i].within(heap_[solid]))
+        if (!heap_[solid].contains(heap_[i]))
             heap_[++solid] = heap_[i];
     filled_ = solid+1;
     if (2*filled_>size_) {

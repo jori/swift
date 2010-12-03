@@ -12,7 +12,7 @@ int main (int argn, char** args) {
         char* br = strchr(line,'(');
         if (br && 2==sscanf(br,"(%i,%lli)",&lr,&of)) {
             bin_t found(lr,of);
-            if ( found.within(target) || target.within(found))
+            if ( target.contains(found) || found.contains(target))
                 printf("%s\n",line);
         }
     }

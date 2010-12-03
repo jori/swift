@@ -34,7 +34,7 @@ void    Channel::AddPeakHashes (struct evbuffer *evb) {
 
 void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
     bin_t peak = file().peak_for(pos);
-    while (pos!=peak && ((NOW&3)==3 || !data_out_cap_.within(pos.parent())) &&
+    while (pos!=peak && ((NOW&3)==3 || !pos.parent().contains(data_out_cap_)) &&
             ack_in_.get(pos.parent())==binmap_t::EMPTY  ) {
         bin_t uncle = pos.sibling();
         evbuffer_add_8(evb, SWIFT_HASH);
@@ -304,7 +304,7 @@ void    Channel::OnHash (struct evbuffer *evb) {
 
 void    Channel::CleanHintOut (bin_t pos) {
     int hi = 0;
-    while (hi<hint_out_.size() && !pos.within(hint_out_[hi].bin))
+    while (hi<hint_out_.size() && !hint_out_[hi].bin.contains(pos))
         hi++;
     if (hi==hint_out_.size())
         return; // something not hinted or hinted in far past
@@ -370,11 +370,11 @@ void    Channel::OnAck (struct evbuffer *evb) {
     int di = 0, ri = 0;
     // find an entry for the send (data out) event
     while (  di<data_out_.size() && ( data_out_[di]==tintbin() ||
-           !data_out_[di].bin.within(ackd_pos) )  )
+           !ackd_pos.contains(data_out_[di].bin) )  )
         di++;
     // FUTURE: delayed acks
     // rule out retransmits
-    while (  ri<data_out_tmo_.size() && !data_out_tmo_[ri].bin.within(ackd_pos) )
+    while (  ri<data_out_tmo_.size() && !ackd_pos.contains(data_out_tmo_[ri].bin) )
         ri++;
     dprintf("%s #%u %cack %s %lli\n",tintstr(),id_,
             di==data_out_.size()?'?':'-',ackd_pos.str(),peer_time);

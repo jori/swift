@@ -37,8 +37,8 @@ TEST(Bin64Test,Navigation) {
 
 TEST(Bin64Test,Overflows) {
 
-    EXPECT_FALSE(bin_t(0,1).within(bin_t::NONE));
-    EXPECT_TRUE(bin_t(0,1).within(bin_t::ALL));
+    EXPECT_FALSE(bin_t(bin_t::NONE).contains(bin_t(0,1)));
+    EXPECT_TRUE(bin_t(bin_t::ALL).contains(bin_t(0,1)));
     EXPECT_EQ(0,bin_t::none().width());
     EXPECT_EQ(bin_t::none(),bin_t::none().twisted(123));
     /*EXPECT_EQ(bin64_t::NONE.parent(),bin64_t::NONE);

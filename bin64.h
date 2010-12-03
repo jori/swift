@@ -106,20 +106,19 @@ struct bin_t {
     }
 
     /** Check whether this bin is within the specified bin. */
-    bool    within (bin_t maybe_asc) {
-        if (maybe_asc==bin_t::NONE)
+    bool    contains (bin_t bin) const {
+        if (v == bin_t::NONE) {
             return false;
-        uint64_t short_tail = maybe_asc.tail_bits();
-        if (tail_bits()>short_tail)
-            return false;
-        return (v&~short_tail) == (maybe_asc.v&~short_tail) ;
+        }
+
+        return (v & (v + 1)) <= bin.v && bin.v < (v | (v + 1));
     }
 
     /** Left or right, depending whether the destination is. */
     bin_t   towards (bin_t dest) const {
-        if (!dest.within(*this))
+        if (!contains(dest))
             return NONE;
-        if (dest.within(left()))
+        if (left().contains(dest))
             return left();
         else
             return right();

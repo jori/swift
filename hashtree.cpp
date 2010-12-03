@@ -275,7 +275,7 @@ int         HashTree::AppendData (char* data, int length) {
 
 bin_t         HashTree::peak_for (bin_t pos) const {
     int pi=0;
-    while (pi<peak_count_ && !pos.within(peaks_[pi]))
+    while (pi<peak_count_ && !peaks_[pi].contains(pos))
         pi++;
     return pi==peak_count_ ? bin_t(bin_t::NONE) : peaks_[pi];
 }
