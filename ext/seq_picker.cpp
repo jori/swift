@@ -75,7 +75,7 @@ public:
         }
         while (hint.base_length()>max_width)
             hint = hint.left();
-        assert(ack_hint_out_.get(hint)==binmap_t::EMPTY);
+        assert(ack_hint_out_.is_empty(hint));
         ack_hint_out_.set(hint);
         hint_out_.push_back(tintbin(NOW,hint));
         return hint;

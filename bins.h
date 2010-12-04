@@ -38,9 +38,6 @@ public:
     /** Destructor. */
     ~binmap_t(); 
 
-    /** Get value for the bin. */
-    uint16_t    get (bin_t bin);
-    
     /** Set value for the bin. */
     void        set (bin_t bin, fill_t val=FILLED);
     
@@ -94,10 +91,6 @@ public:
 
     uint64_t    mass ();
     
-    /** Return true if the range is solid (either all-0 or 1). If val is
-        specified, the interval must be both solid and filled/empty,
-        depending on the value. */
-    bool        is_solid (bin_t range=bin_t::ALL, fill_t val=MIXED) ;
     /** Whether range/bin is empty. */
     bool        is_empty (bin_t range=bin_t::ALL) { return is_solid(range,EMPTY); }
     /** Whether range/bin is filled. */
@@ -106,11 +99,6 @@ public:
     /** Clear everything, empty all bins. */
     void        clear ();
     
-    /** Returns whether the int is mixed (not all-1 or all-0). */
-    static bool is_mixed (uint16_t val) { return val!=EMPTY && val!=FILLED; }
-    /** Returns whether the int is solid (0x0 or 0xffff). */
-    static bool is_solid (uint16_t val) { return val==EMPTY || val==FILLED; }
-
     /** Twisting is some generalization of XOR. For every 1-bit in the mask,
         the respective layer of the binary tree is flipped, i.e. left and
         right change places. Twisting is mostly needed for randomization.  */
@@ -126,7 +114,16 @@ public:
     void        to_coarse_bitmap (uint16_t* bits, bin_t range, uint8_t height);
     
 private:
-    
+    /** Return true if the range is solid (either all-0 or 1). If val is
+        specified, the interval must be both solid and filled/empty,
+        depending on the value. */
+    bool        is_solid (bin_t range=bin_t::ALL, fill_t val=MIXED) ;
+    /** Returns whether the int is mixed (not all-1 or all-0). */
+    static bool is_mixed (uint16_t val) { return val!=EMPTY && val!=FILLED; }
+    /** Returns whether the int is solid (0x0 or 0xffff). */
+    static bool is_solid (uint16_t val) { return val==EMPTY || val==FILLED; }
+
+
     /** Every 16th uint32 is a flag field denoting whether
      previous 30 halves (in 15 cells) are deep or not.
      The last bit is used as a fill-flag.

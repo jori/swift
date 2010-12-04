@@ -279,19 +279,6 @@ bin_t binmap_t::find (const bin_t range, fill_t seek) {
 }
 
 
-uint16_t binmap_t::get (bin_t bin) {
-    if (bin.is_none())
-        return EMPTY;
-    iterator i(this,bin,true);
-    //while ( i.pos!=bin && 
-    //        (i.deep() || (*i!=BIN_FULL && *i!=BIN_EMPTY)) )
-    //    i.towards(bin);
-    //printf("at %i ",i.half);
-    //dump("get made");
-    return *i; // deep cell is never 0xffff or 0x0000; FIXME: API caveat
-}
-
-
 void binmap_t::clear () {
     set(bin_t(height,0),EMPTY);
 }

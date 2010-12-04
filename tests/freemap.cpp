@@ -48,7 +48,7 @@ TEST(FreemapTest,Freemap) {
             while (alloc.layer()>lr)
                 alloc = alloc.left();
             ASSERT_NE(0ULL,~alloc.toUInt());
-            EXPECT_EQ(binmap_t::EMPTY, space.get(alloc));
+            EXPECT_TRUE(space.is_empty(alloc));
             space.set(alloc,binmap_t::FILLED);
             long dealloc_time = 1<<rand_norm(22);
             printf("alloc 2**%i starting at %lli for %li ticks\n",
@@ -73,7 +73,7 @@ TEST(FreemapTest,Freemap) {
     }
     for(ts_t::iterator i=to_free.begin(); i!=to_free.end(); i++)
         space.set(i->second,binmap_t::EMPTY);
-    EXPECT_EQ(binmap_t::EMPTY,space.get(top));
+    EXPECT_TRUE(space.is_empty(top));
 }
 
 int main (int argc, char** argv) {

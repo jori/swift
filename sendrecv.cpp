@@ -37,7 +37,7 @@ void    Channel::AddPeakHashes (struct evbuffer *evb) {
 void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
     bin_t peak = file().peak_for(pos);
     while (pos!=peak && ((NOW&3)==3 || !pos.parent().contains(data_out_cap_)) &&
-            ack_in_.get(pos.parent())==binmap_t::EMPTY  ) {
+            ack_in_.is_empty(pos.parent()) ) {
         bin_t uncle = pos.sibling();
         evbuffer_add_8(evb, SWIFT_HASH);
         evbuffer_add_32be(evb, bin_toUInt32(uncle));
@@ -84,7 +84,7 @@ bin_t        Channel::DequeueHint () {
         }
         //if (time < NOW-TINT_SEC*3/2 )
         //    continue;  bad idea
-        if (ack_in_.get(hint)!=binmap_t::FILLED)
+        if (!ack_in_.is_filled(hint))
             send = hint;
     }
     uint64_t mass = 0;
@@ -344,7 +344,7 @@ void    Channel::CleanHintOut (bin_t pos) {
 
 bin_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted data
     bin_t pos = bin_fromUInt32(evbuffer_remove_32be(evb));
-    if (file().ack_out().get(pos)) {
+    if (!file().ack_out().is_empty(pos)) {
         data_in_ = tintbin(TINT_NEVER,transfer().ack_out().cover(pos));
         return bin_t::NONE;
     }

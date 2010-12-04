@@ -32,19 +32,19 @@ TEST(BinsTest,SetGet) {
     bin_t b3(1,0), b2(0,1), b4(0,2), b6(1,1), b7(2,0);
     bs.set(b3);
     //bs.dump("set done");
-    EXPECT_EQ(binmap_t::FILLED,bs.get(b3));
+    EXPECT_TRUE(bs.is_filled(b3));
     //bs.dump("set checkd");
-    EXPECT_EQ(binmap_t::FILLED,bs.get(b2));
+    EXPECT_TRUE(bs.is_filled(b2));
     //bs.dump("get b2 done");
-    EXPECT_EQ(binmap_t::FILLED,bs.get(b3));
+    EXPECT_TRUE(bs.is_filled(b3));
     //bs.dump("get b3 done");
-    EXPECT_EQ(binmap_t::EMPTY,bs.get(b4));
-    EXPECT_EQ(binmap_t::EMPTY,bs.get(b6));
-    EXPECT_NE(binmap_t::FILLED,bs.get(b7));
-    EXPECT_NE(binmap_t::EMPTY,bs.get(b7));
-    EXPECT_EQ(binmap_t::FILLED,bs.get(b3));
+    EXPECT_TRUE(bs.is_empty(b4));
+    EXPECT_TRUE(bs.is_empty(b6));
+    EXPECT_FALSE(bs.is_filled(b7));
+    EXPECT_FALSE(bs.is_empty(b7));
+    EXPECT_TRUE(bs.is_filled(b3));
     bs.set(bin_t(1,1));
-    EXPECT_EQ(binmap_t::FILLED,bs.get(bin_t(2,0)));
+    EXPECT_TRUE(bs.is_filled(bin_t(2,0)));
 
 }
 
@@ -72,17 +72,21 @@ TEST(BinsTest,Chess) {
     for(int i=0; i<15; i++)
         chess16.set(bin_t(0,i), (i&1)?binmap_t::FILLED:binmap_t::EMPTY);
     chess16.set(bin_t(0,15), binmap_t::FILLED);
-    for(int i=0; i<16; i++)
-        EXPECT_EQ((i&1)?binmap_t::FILLED:binmap_t::EMPTY, chess16.get(bin_t(0,i)));
-    EXPECT_NE(binmap_t::FILLED,chess16.get(bin_t(4,0)));
-    EXPECT_NE(binmap_t::EMPTY,chess16.get(bin_t(4,0)));
+    for(int i=0; i<16; i++) {
+        if (i&1) {
+            EXPECT_TRUE(chess16.is_filled(bin_t(0,i)));
+        } else {
+            EXPECT_TRUE(chess16.is_empty(bin_t(0,i)));
+        }
+    }
+    EXPECT_FALSE(chess16.is_empty(bin_t(4,0)));
     for(int i=0; i<16; i+=2)
         chess16.set(bin_t(0,i), binmap_t::FILLED);
-    EXPECT_EQ(binmap_t::FILLED,chess16.get(bin_t(4,0)));
-    EXPECT_EQ(binmap_t::FILLED,chess16.get(bin_t(2,3)));
-    
+    EXPECT_TRUE(chess16.is_filled(bin_t(4,0)));
+    EXPECT_TRUE(chess16.is_filled(bin_t(2,3)));
+
     chess16.set(bin_t(4,1),binmap_t::FILLED);
-    EXPECT_EQ(binmap_t::FILLED,chess16.get(bin_t(5,0)));
+    EXPECT_TRUE(chess16.is_filled(bin_t(5,0)));
 }
 
 TEST(BinsTest,Staircase) {
@@ -92,11 +96,11 @@ TEST(BinsTest,Staircase) {
     for(int i=0;i<TOPLAYR;i++)
         staircase.set(bin_t(i,1),binmap_t::FILLED);
     
-    EXPECT_NE(binmap_t::FILLED,staircase.get(bin_t(TOPLAYR,0)));
-    EXPECT_NE(binmap_t::EMPTY,staircase.get(bin_t(TOPLAYR,0)));
+    EXPECT_FALSE(staircase.is_filled(bin_t(TOPLAYR,0)));
+    EXPECT_FALSE(staircase.is_empty(bin_t(TOPLAYR,0)));
 
     staircase.set(bin_t(0,0),binmap_t::FILLED);
-    EXPECT_EQ(binmap_t::FILLED,staircase.get(bin_t(TOPLAYR,0)));
+    EXPECT_TRUE(staircase.is_filled(bin_t(TOPLAYR,0)));
 
 }
 
@@ -106,11 +110,11 @@ TEST(BinsTest,Hole) {
     hole.set(bin_t(8,0),binmap_t::FILLED);
     hole.set(bin_t(6,1),binmap_t::EMPTY);
     hole.set(bin_t(6,2),binmap_t::EMPTY);
-    EXPECT_EQ(binmap_t::FILLED,hole.get(bin_t(6,0)));
-    EXPECT_EQ(binmap_t::FILLED,hole.get(bin_t(6,3)));
-    EXPECT_NE(binmap_t::FILLED,hole.get(bin_t(8,0)));
-    EXPECT_NE(binmap_t::EMPTY,hole.get(bin_t(8,0)));
-    EXPECT_EQ(binmap_t::EMPTY,hole.get(bin_t(6,1)));
+    EXPECT_TRUE(hole.is_filled(bin_t(6,0)));
+    EXPECT_TRUE(hole.is_filled(bin_t(6,3)));
+    EXPECT_FALSE(hole.is_filled(bin_t(8,0)));
+    EXPECT_FALSE(hole.is_empty(bin_t(8,0)));
+    EXPECT_TRUE(hole.is_empty(bin_t(6,1)));
     
 }
 
@@ -182,11 +186,11 @@ TEST(BinsTest,Remove) {
     c.set(bin_t(2,0));
     c.set(bin_t(2,2));
     b.remove(c);
-    EXPECT_EQ(binmap_t::EMPTY,b.get(bin_t(2,0)));
-    EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(2,1)));
-    EXPECT_EQ(binmap_t::EMPTY,b.get(bin_t(2,2)));
-    EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(2,3)));
-    EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(4,1)));
+    EXPECT_TRUE(b.is_empty(bin_t(2,0)));
+    EXPECT_TRUE(b.is_filled(bin_t(2,1)));
+    EXPECT_TRUE(b.is_empty(bin_t(2,2)));
+    EXPECT_TRUE(b.is_filled(bin_t(2,3)));
+    EXPECT_TRUE(b.is_filled(bin_t(4,1)));
     
     binmap_t b16, b1024, b8192;
     b16.set(bin_t(3,1));
@@ -199,16 +203,16 @@ TEST(BinsTest,Remove) {
     b1024.remove(b16);
     b1024.remove(b8192);
     
-    EXPECT_EQ(binmap_t::EMPTY,b1024.get(bin_t(3,1)));
-    EXPECT_EQ(binmap_t::EMPTY,b1024.get(bin_t(5,0)));
-    EXPECT_EQ(binmap_t::EMPTY,b1024.get(bin_t(9,1)));
-    EXPECT_EQ(binmap_t::EMPTY,b1024.get(bin_t(12,1)));
-    EXPECT_EQ(binmap_t::FILLED,b1024.get(bin_t(4,2)));
+    EXPECT_TRUE(b1024.is_empty(bin_t(3,1)));
+    EXPECT_TRUE(b1024.is_empty(bin_t(5,0)));
+    EXPECT_TRUE(b1024.is_empty(bin_t(9,1)));
+    EXPECT_TRUE(b1024.is_empty(bin_t(12,1)));
+    EXPECT_TRUE(b1024.is_filled(bin_t(4,2)));
     
     b8192.set(bin_t(2,3));
     b16.remove(b8192);
-    EXPECT_EQ(binmap_t::EMPTY,b16.get(bin_t(2,3)));
-    EXPECT_EQ(binmap_t::FILLED,b16.get(bin_t(2,2)));
+    EXPECT_TRUE(b16.is_empty(bin_t(2,3)));
+    EXPECT_TRUE(b16.is_filled(bin_t(2,2)));
     
 }
 
@@ -266,11 +270,12 @@ TEST(BinsTest,CopyRange) {
     add.set(bin_t(0,13));
     add.set(bin_t(5,118));
     data.range_copy(add, bin_t(3,0));
-    EXPECT_TRUE(binmap_t::is_mixed(data.get(bin_t(3,0))));
-    EXPECT_EQ(binmap_t::EMPTY,data.get(bin_t(2,0)));
-    EXPECT_EQ(binmap_t::FILLED,data.get(bin_t(2,1)));
-    EXPECT_EQ(binmap_t::EMPTY,data.get(bin_t(1,6)));
-    EXPECT_EQ(binmap_t::FILLED,data.get(bin_t(1,7)));
+    EXPECT_FALSE(data.is_empty(bin_t(3,0)));
+    EXPECT_FALSE(data.is_filled(bin_t(3,0)));
+    EXPECT_TRUE(data.is_empty(bin_t(2,0)));
+    EXPECT_TRUE(data.is_filled(bin_t(2,1)));
+    EXPECT_TRUE(data.is_empty(bin_t(1,6)));
+    EXPECT_TRUE(data.is_filled(bin_t(1,7)));
 }
 
 TEST(BinsTest, Mass) {
@@ -292,19 +297,19 @@ TEST(BinsTest, Mass) {
 TEST(BinsTest,Twist) {
     binmap_t b;
     b.set(bin_t(3,2));
-    EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(3,2)));
-    EXPECT_EQ(binmap_t::EMPTY,b.get(bin_t(3,3)));
+    EXPECT_TRUE(b.is_filled(bin_t(3,2)));
+    EXPECT_TRUE(b.is_empty(bin_t(3,3)));
     b.twist(1<<3);
-    EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(3,3)));
-    EXPECT_EQ(binmap_t::EMPTY,b.get(bin_t(3,2)));
+    EXPECT_TRUE(b.is_filled(bin_t(3,3)));
+    EXPECT_TRUE(b.is_empty(bin_t(3,2)));
     bin_t tw = b.find(bin_t(5,0),binmap_t::FILLED);
     while (tw.base_length()>(1<<3))
         tw = tw.left();
     tw = tw.twisted(1<<3);
     EXPECT_EQ(bin_t(3,2),tw);
     b.twist(0);
-    EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(3,2)));
-    EXPECT_EQ(binmap_t::EMPTY,b.get(bin_t(3,3)));
+    EXPECT_TRUE(b.is_filled(bin_t(3,2)));
+    EXPECT_TRUE(b.is_empty(bin_t(3,3)));
 }
 
 TEST(BinsTest,SeqLength) {
@@ -332,7 +337,7 @@ TEST(BinsTest,EmptyFilled) {
     
     EXPECT_TRUE(b.is_empty(bin_t(2,3)));
     EXPECT_FALSE(b.is_filled(bin_t(2,3)));
-    EXPECT_TRUE(b.is_solid(bin_t(2,3),binmap_t::MIXED));
+    //EXPECT_TRUE(b.is_solid(bin_t(2,3),binmap_t::MIXED));
     EXPECT_TRUE(b.is_filled(bin_t(1,0)));
     EXPECT_TRUE(b.is_filled(bin_t(1,5)));
     EXPECT_FALSE(b.is_filled(bin_t(1,3)));

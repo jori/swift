@@ -290,14 +290,14 @@ bool            HashTree::OfferHash (bin_t pos, const Sha1Hash& hash) {
         return false;
     if (peak==pos)
         return hash == hashes_[pos.toUInt()];
-    if (ack_out_.get(pos.parent())!=binmap_t::EMPTY)
+    if (!ack_out_.is_empty(pos.parent()))
         return hash==hashes_[pos.toUInt()]; // have this hash already, even accptd data
     hashes_[pos.toUInt()] = hash;
     if (!pos.is_base())
         return false; // who cares?
     bin_t p = pos;
     Sha1Hash uphash = hash;
-    while ( p!=peak && ack_out_.get(p)==binmap_t::EMPTY ) {
+    while ( p!=peak && ack_out_.is_empty(p) ) {
         hashes_[p.toUInt()] = uphash;
         p = p.parent();
         uphash = Sha1Hash(hashes_[p.left().toUInt()],hashes_[p.right().toUInt()]) ;
@@ -313,7 +313,7 @@ bool            HashTree::OfferData (bin_t pos, const char* data, size_t length)
         return false;
     if (length<1024 && pos!=bin_t(0,sizek_-1))
         return false;
-    if (ack_out_.get(pos)==binmap_t::FILLED)
+    if (ack_out_.is_filled(pos))
         return true; // to set data_in_
     bin_t peak = peak_for(pos);
     if (peak.is_none())
