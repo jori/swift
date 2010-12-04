@@ -59,6 +59,6 @@ const char* bin_t::str () const {
     else if (v==NONE)
         return "(NONE)";
     else
-        sprintf(_b64sr[_rsc],"(%i,%lli)",(int)layer(),offset());
+        sprintf(_b64sr[_rsc],"(%i,%lli)",(int)layer(),layer_offset());
     return _b64sr[_rsc];
 }

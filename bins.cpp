@@ -496,8 +496,8 @@ void    binmap_t::to_coarse_bitmap (uint16_t* bits, bin_t range, uint8_t height)
     //assert(range.layer()-height>=4);
     int height16 = range.layer()-height-4;
     int wordwidth = height16 > 0 ? (1 << height16) : 1;
-    int offset = height16 > 0 ? (range.offset() << height16) : 
-                                (range.offset() >> -height16); 
+    int offset = height16 > 0 ? (range.layer_offset() << height16) : 
+                                (range.layer_offset() >> -height16); 
     for(int i=0; i<wordwidth; i++) 
         map16(bits+i,bin_t(height+4,offset+i));
 }

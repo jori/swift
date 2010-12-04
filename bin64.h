@@ -77,7 +77,7 @@ struct bin_t {
     }
 
     /** Get the bin's offset at its own layer, e.g. 2 for (1,2). */
-    uint64_t offset () const {
+    uint64_t layer_offset () const {
         return v >> (layer()+1);
     }
 

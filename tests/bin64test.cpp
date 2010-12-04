@@ -16,8 +16,8 @@ TEST(Bin64Test,InitGet) {
     EXPECT_EQ(0x2,bin_t(2,1).layer());
     EXPECT_EQ(34,bin_t(34,2345).layer());
     EXPECT_EQ(0x7ffffffffULL,bin_t(34,2345).layer_bits());
-    EXPECT_EQ(1,bin_t(2,1).offset());
-    EXPECT_EQ(2345,bin_t(34,2345).offset());
+    EXPECT_EQ(1,bin_t(2,1).layer_offset());
+    EXPECT_EQ(2345,bin_t(34,2345).layer_offset());
     EXPECT_EQ((1<<1) - 1,bin_t(0,123).layer_bits());
     EXPECT_EQ((1<<17) - 1,bin_t(16,123).layer_bits());
 
