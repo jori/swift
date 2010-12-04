@@ -28,7 +28,8 @@ void    Channel::AddPeakHashes (struct evbuffer *evb) {
         evbuffer_add_8(evb, SWIFT_HASH);
         evbuffer_add_32be(evb, bin_toUInt32(peak));
         evbuffer_add_hash(evb, file().peak_hash(i));
-        dprintf("%s #%u +phash %s\n",tintstr(),id_,peak.str());
+        char bin_name_buf[32];
+        dprintf("%s #%u +phash %s\n",tintstr(),id_,peak.str(bin_name_buf));
     }
 }
 
@@ -41,7 +42,8 @@ void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
         evbuffer_add_8(evb, SWIFT_HASH);
         evbuffer_add_32be(evb, bin_toUInt32(uncle));
         evbuffer_add_hash(evb,  file().hash(uncle) );
-        dprintf("%s #%u +hash %s\n",tintstr(),id_,uncle.str());
+        char bin_name_buf[32];
+        dprintf("%s #%u +hash %s\n",tintstr(),id_,uncle.str(bin_name_buf));
         pos = pos.parent();
     }
 }
@@ -67,7 +69,8 @@ bin_t        Channel::DequeueHint () {
         bin_t my_pick = ImposeHint(); // FIXME move to the loop
         if (!my_pick.is_none()) {
             hint_in_.push_back(my_pick);
-            dprintf("%s #%u *hint %s\n",tintstr(),id_,my_pick.str());
+            char bin_name_buf[32];
+            dprintf("%s #%u *hint %s\n",tintstr(),id_,my_pick.str(bin_name_buf));
         }
     }
     bin_t send = bin_t::NONE;
@@ -87,7 +90,8 @@ bin_t        Channel::DequeueHint () {
     uint64_t mass = 0;
     for(int i=0; i<hint_in_.size(); i++)
         mass += hint_in_[i].bin.base_length();
-    dprintf("%s #%u dequeued %s [%lli]\n",tintstr(),id_,send.str(),mass);
+    char bin_name_buf[32];
+    dprintf("%s #%u dequeued %s [%lli]\n",tintstr(),id_,send.str(bin_name_buf),mass);
     return send;
 }
 
@@ -163,7 +167,8 @@ void    Channel::AddHint (struct evbuffer *evb) {
         if (!hint.is_none()) {
             evbuffer_add_8(evb, SWIFT_HINT);
             evbuffer_add_32be(evb, bin_toUInt32(hint));
-            dprintf("%s #%u +hint %s [%lli]\n",tintstr(),id_,hint.str(),hint_out_size_);
+            char bin_name_buf[32];
+            dprintf("%s #%u +hint %s [%lli]\n",tintstr(),id_,hint.str(bin_name_buf),hint_out_size_);
             hint_out_.push_back(hint);
             hint_out_size_ += hint.base_length();
         } else
@@ -221,7 +226,9 @@ bin_t        Channel::AddData (struct evbuffer *evb) {
 
     last_data_out_time_ = NOW;
     data_out_.push_back(tosend);
-    dprintf("%s #%u +data %s\n",tintstr(),id_,tosend.str());
+
+    char bin_name_buf[32];
+    dprintf("%s #%u +data %s\n",tintstr(),id_,tosend.str(bin_name_buf));
 
     return tosend;
 }
@@ -236,8 +243,9 @@ void    Channel::AddAck (struct evbuffer *evb) {
     if (data_in_.time!=TINT_NEVER)
         evbuffer_add_64be(evb, data_in_.time);
     have_out_.set(data_in_.bin);
+    char bin_name_buf[32];
     dprintf("%s #%u +ack %s %s\n",
-        tintstr(),id_,data_in_.bin.str(),tintstr(data_in_.time));
+        tintstr(),id_,data_in_.bin.str(bin_name_buf),tintstr(data_in_.time));
     if (data_in_.bin.layer()>2)
         data_in_dbl_ = data_in_.bin;
     data_in_ = tintbin();
@@ -259,7 +267,8 @@ void    Channel::AddHave (struct evbuffer *evb) {
         have_out_.set(ack);
         evbuffer_add_8(evb, SWIFT_HAVE);
         evbuffer_add_32be(evb, bin_toUInt32(ack));
-        dprintf("%s #%u +have %s\n",tintstr(),id_,ack.str());
+        char bin_name_buf[32];
+        dprintf("%s #%u +have %s\n",tintstr(),id_,ack.str(bin_name_buf));
     }
 }
 
@@ -299,7 +308,8 @@ void    Channel::OnHash (struct evbuffer *evb) {
     bin_t pos = bin_fromUInt32(evbuffer_remove_32be(evb));
     Sha1Hash hash = evbuffer_remove_hash(evb);
     file().OfferHash(pos,hash);
-    dprintf("%s #%u -hash %s\n",tintstr(),id_,pos.str());
+    char bin_name_buf[32];
+    dprintf("%s #%u -hash %s\n",tintstr(),id_,pos.str(bin_name_buf));
 }
 
 
@@ -336,10 +346,12 @@ bin_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted
     evbuffer_drain(evb, length);
     data_in_ = tintbin(NOW,bin_t::NONE);
     if (!file().OfferData(pos, (char*)data, length)) {
-        dprintf("%s #%u !data %s\n",tintstr(),id_,pos.str());
+        char bin_name_buf[32];
+        dprintf("%s #%u !data %s\n",tintstr(),id_,pos.str(bin_name_buf));
         return bin_t::NONE;
     }
-    dprintf("%s #%u -data %s\n",tintstr(),id_,pos.str());
+    char bin_name_buf[32];
+    dprintf("%s #%u -data %s\n",tintstr(),id_,pos.str(bin_name_buf));
     bin_t cover = transfer().ack_out().cover(pos);
     for(int i=0; i<transfer().cb_installed; i++)
         if (cover.layer()>=transfer().cb_agg[i])
@@ -364,7 +376,8 @@ void    Channel::OnAck (struct evbuffer *evb) {
     if (ackd_pos.is_none())
         return; // likely, brocken packet / insufficient hashes
     if (file().size() && ackd_pos.base_offset()>=file().packet_size()) {
-        eprintf("invalid ack: %s\n",ackd_pos.str());
+        char bin_name_buf[32];
+        eprintf("invalid ack: %s\n",ackd_pos.str(bin_name_buf));
         return;
     }
     ack_in_.set(ackd_pos);
@@ -377,8 +390,9 @@ void    Channel::OnAck (struct evbuffer *evb) {
     // rule out retransmits
     while (  ri<data_out_tmo_.size() && !ackd_pos.contains(data_out_tmo_[ri].bin) )
         ri++;
+    char bin_name_buf[32];
     dprintf("%s #%u %cack %s %lli\n",tintstr(),id_,
-            di==data_out_.size()?'?':'-',ackd_pos.str(),peer_time);
+            di==data_out_.size()?'?':'-',ackd_pos.str(bin_name_buf),peer_time);
     if (di!=data_out_.size() && ri==data_out_tmo_.size()) { // not a retransmit
             // round trip time calculations
         tint rtt = NOW-data_out_[di].time;
@@ -397,7 +411,7 @@ void    Channel::OnAck (struct evbuffer *evb) {
         if (owd_min_bins_[owd_min_bin_]>owd)
             owd_min_bins_[owd_min_bin_] = owd;
         dprintf("%s #%u sendctrl rtt %lli dev %lli based on %s\n",
-                tintstr(),id_,rtt_avg_,dev_avg_,data_out_[di].bin.str());
+                tintstr(),id_,rtt_avg_,dev_avg_,data_out_[di].bin.str(bin_name_buf));
         ack_rcvd_recent_++;
         // early loss detection by packet reordering
         for (int re=0; re<di-MAX_REORDERING; re++) {
@@ -405,7 +419,7 @@ void    Channel::OnAck (struct evbuffer *evb) {
                 continue;
             ack_not_rcvd_recent_++;
             data_out_tmo_.push_back(data_out_[re].bin);
-            dprintf("%s #%u Rdata %s\n",tintstr(),id_,data_out_.front().bin.str());
+            dprintf("%s #%u Rdata %s\n",tintstr(),id_,data_out_.front().bin.str(bin_name_buf));
             data_out_cap_ = bin_t::ALL;
             data_out_[re] = tintbin();
         }
@@ -429,7 +443,8 @@ void Channel::TimeoutDataOut ( ) {
             ack_not_rcvd_recent_++;
             data_out_cap_ = bin_t::ALL;
             data_out_tmo_.push_back(data_out_.front().bin);
-            dprintf("%s #%u Tdata %s\n",tintstr(),id_,data_out_.front().bin.str());
+            char bin_name_buf[32];
+            dprintf("%s #%u Tdata %s\n",tintstr(),id_,data_out_.front().bin.str(bin_name_buf));
         }
         data_out_.pop_front();
     }
@@ -444,7 +459,8 @@ void Channel::OnHave (struct evbuffer *evb) {
     if (ackd_pos.is_none())
         return; // wow, peer has hashes
     ack_in_.set(ackd_pos);
-    dprintf("%s #%u -have %s\n",tintstr(),id_,ackd_pos.str());
+    char bin_name_buf[32];
+    dprintf("%s #%u -have %s\n",tintstr(),id_,ackd_pos.str(bin_name_buf));
 }
 
 
@@ -452,7 +468,8 @@ void    Channel::OnHint (struct evbuffer *evb) {
     bin_t hint = bin_fromUInt32(evbuffer_remove_32be(evb));
     // FIXME: wake up here
     hint_in_.push_back(hint);
-    dprintf("%s #%u -hint %s\n",tintstr(),id_,hint.str());
+    char bin_name_buf[32];
+    dprintf("%s #%u -hint %s\n",tintstr(),id_,hint.str(bin_name_buf));
 }
 
 

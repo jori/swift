@@ -321,7 +321,8 @@ bool            HashTree::OfferData (bin_t pos, const char* data, size_t length)
 
     Sha1Hash data_hash(data,length);
     if (!OfferHash(pos, data_hash)) {
-        //printf("invalid hash for %s: %s\n",pos.str(),data_hash.hex().c_str()); // paranoid
+//        char bin_name_buf[32];
+//        printf("invalid hash for %s: %s\n",pos.str(bin_name_buf),data_hash.hex().c_str()); // paranoid
         return false;
     }
 

@@ -160,7 +160,7 @@ struct bin_t {
         representation of this bin, e.g. "(2,1)".
         The string is statically allocated, must
         not be reused or released. */
-    const char* str () const;
+    const char* str (char * buf) const;
 
 private:
     uint64_t tail_bit () const {

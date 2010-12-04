@@ -14,19 +14,17 @@ const bin_t bin_t::ALL(0x7fffffffffffffffULL);
 
 #include <stdio.h>
 
-const char* bin_t::str () const {
-    static char _b64sr[4][32];
-    static int _rsc;
-    _rsc = (_rsc+1) & 3;
+const char* bin_t::str (char * buf) const {
     if (is_all())
         return "(ALL)";
     else if (is_none())
         return "(NONE)";
     else
-        sprintf(_b64sr[_rsc],"(%i,%lli)",(int)layer(),layer_offset());
-    return _b64sr[_rsc];
+        sprintf(buf,"(%i,%lli)",(int)layer(),layer_offset());
+    return buf;
 }
 
 std::ostream & operator << (std::ostream & ostream, const bin_t & bin) {
-    return ostream << bin.str();
+    char bin_name_buf[32];
+    return ostream << bin.str(bin_name_buf);
 }
