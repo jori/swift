@@ -91,13 +91,13 @@ complete_(0), completek_(0)
         print_error("cannot open the file");
         return;
     }
-    char hfn[1024] = "";
-    if (!hash_filename) {
-        strcat(hfn, filename);
-        strcat(hfn, ".mhash");
-    } else
-        strcpy(hfn,hash_filename);
-    hash_fd_ = open(hfn,OPENFLAGS,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    std::string hfn;
+    if (!hash_filename){
+        hfn.assign(filename);
+        hfn.append(".mhash");
+        hash_filename = hfn.c_str();
+    }
+    hash_fd_ = open(hash_filename,OPENFLAGS,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
     if (hash_fd_<0) {
         hash_fd_ = 0;
         print_error("cannot open hash file");
