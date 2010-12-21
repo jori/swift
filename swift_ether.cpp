@@ -94,7 +94,7 @@ void EthernetSwift::Data(tint channel, const bin64_t& range,
     evbuffer_add_32be(evb, Channel::EncodeID(channel));
     evbuffer_add_8(evb, SWIFT_ETH_DATA);
     evbuffer_add_32be(evb, range.to32());
-    evbuffer_add(evb, buf, evbuffer_get_length(evb));
+    evbuffer_add(evb, buf, evbuffer_get_length(buf));
     msgs.push_back(evb);
 }
 
