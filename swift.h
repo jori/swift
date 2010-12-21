@@ -53,6 +53,12 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <linux/if_packet.h>
+#include <linux/if_ether.h>
+#include <linux/if_arp.h>
+#endif
 #include <event2/event.h>
 #include <event2/event_struct.h>
 #include <event2/buffer.h>
@@ -67,9 +73,13 @@ namespace swift {
 #define INVALID_SOCKET -1
 #endif
 
-/** IPv4 address, just a nice wrapping around struct sockaddr_in. */
     struct Address {
+/** IPv4 address, just a nice wrapping around struct sockaddr_in. */
 	struct sockaddr_in  addr;
+#ifndef _WIN32
+/** MAC address */
+	struct sockaddr_ll addrll;
+#endif
 	static uint32_t LOCALHOST;
 	void set_port (uint16_t port) {
 	    addr.sin_port = htons(port);
@@ -87,6 +97,15 @@ namespace swift {
 	void clear () {
 	    memset(&addr,0,sizeof(struct sockaddr_in));
 	    addr.sin_family = AF_INET;
+#ifndef _WIN32
+	    addrll.sll_family = PF_PACKET;
+	    addrll.sll_protocol = htons(ETH_P_IP);
+	    addrll.sll_ifindex = -1;
+	    addrll.sll_hatype = ARPHRD_ETHER;
+	    addrll.sll_pkttype = PACKET_HOST;
+	    addrll.sll_halen = ETH_ALEN;
+	    memset(addrll.sll_addr,0,8);
+#endif
 	}
 	Address() {
 	    clear();
@@ -125,6 +144,28 @@ namespace swift {
 	    return rs[i];
 	}
 	bool operator != (const Address& b) const { return !(*this==b); }
+#ifndef _WIN32
+/** MAC address operations */
+	void set_mac(const unsigned char *mac) {
+	    memcpy(addrll.sll_addr, mac, 6);
+	}
+	void set_ifindex(int ifindex) { addrll.sll_ifindex = ifindex; }
+	void set_pkttype(unsigned char pkttype) {
+	    addrll.sll_pkttype = pkttype;
+	}
+	Address(const unsigned char *mac,
+		unsigned char pkttype=PACKET_HOST, int ifindex=-1) {
+	    clear();
+	    set_mac(mac);
+	    set_pkttype(pkttype);
+	    set_ifindex(ifindex);
+	} 
+	Address(const struct sockaddr_ll& address) : addrll(address) {}
+	bool is_mac(const Address& b) const {
+	    return !memcmp(addrll.sll_addr,b.addrll.sll_addr,ETH_ALEN);
+	}
+	operator sockaddr_ll () const {return addrll;}
+#endif
     };
 
 
@@ -376,7 +417,7 @@ namespace swift {
 	/** the current time */
 	static tint Time();
 
-	static int SendTo(SOCKET sock, Address addr, struct evbuffer *evb);
+	static int SendTo(SOCKET sock, const Address& addr, struct evbuffer *evb);
 	static int RecvFrom(SOCKET sock, Address& addr, struct evbuffer *evb);
 
         void        Recv (struct evbuffer *evb);
@@ -583,6 +624,7 @@ namespace swift {
     void ReportCallback(int fd, short event, void *arg);
     void EndCallback(int fd, short event, void *arg);
 
+    int evbuffer_add_string(struct evbuffer *evb, std::string str);
     int evbuffer_add_8(struct evbuffer *evb, uint8_t b);
     int evbuffer_add_16be(struct evbuffer *evb, uint16_t w);
     int evbuffer_add_32be(struct evbuffer *evb, uint32_t i);

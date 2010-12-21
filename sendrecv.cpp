@@ -132,7 +132,7 @@ void    Channel::Send () {
     if (evbuffer_get_length(evb)==4) {// only the channel id; bare keep-alive
         data = bin64_t::ALL;
     }
-    if (Channel::SendTo(socket_,peer(),evb)==-1)
+    if (SendTo(socket_,peer(),evb)==-1)
         print_error("can't send datagram");
     last_send_time_ = NOW;
     sent_since_recv_++;

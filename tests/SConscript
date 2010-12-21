@@ -90,3 +90,10 @@ env.Program(
     LIBS=libs,
     LIBPATH=libpath )
 
+env.Program( 
+    target='ethertest',
+    source=['ethertest.cpp'],
+    CPPPATH=cpppath,
+    LIBS=libs,
+    LIBPATH=libpath )
+
