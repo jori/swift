@@ -5,7 +5,7 @@
 
 namespace swift {
 
-#define MAX_ETH_FRAME_LEN (ETH_FRAME_LEN + ETH_FCS_LEN)	
+#define MAX_ETH_FRAME_LEN (ETH_FRAME_LEN + ETH_FCS_LEN)
 
 typedef enum {
     SWIFT_ETH_OPEN = SWIFT_MESSAGE_COUNT + 1,
@@ -21,9 +21,9 @@ typedef enum {
 
 class EthernetSwift {
 public:
-    EthernetSwift(FileTransfer *ft, bool selftest=false);
+    EthernetSwift(FileTransfer *ft);
     ~EthernetSwift();
-    static bool Init(const std::string& dev);
+    static bool Init(const std::string& dev, bool selftst=false);
     void Open(tint channel, tint rev_channel, const Sha1Hash& hash);
     void Request(tint channel, const bin64_t& range);
     void Hash(tint channel, const Sha1Hash& hash);
@@ -32,8 +32,19 @@ public:
     void Ack(tint channel, const bin64_t& range);
     void Peer(tint channel, const Address& addr);
     void Close(tint channel);
+    static void OnHandshake(const unsigned char *srcmac,
+			    const unsigned char *dstmac, struct evbuffer *evb);
+    void OnOpen(const unsigned char *srcmac, const unsigned char *dstmac,
+		struct evbuffer *evb);
+    void OnRequest(const unsigned char *srcmac, const unsigned char *dstmac,
+		   struct evbuffer *evb);
+    void OnData(const unsigned char *srcmac, const unsigned char *dstmac,
+		struct evbuffer *evb);
+    void OnClose(const unsigned char *srcmac, const unsigned char *dstmac,
+		 struct evbuffer *evb);
 private:
     static bool initialised;
+    static bool selftest;
     static SOCKET sock;
     static int myifindex;
     unsigned char pkttype;
@@ -41,7 +52,7 @@ private:
     unsigned char peer_mac[ETH_ALEN];
     const static unsigned char brmac[ETH_ALEN];
     tint channel;
-    tint reverse_channel;
+    tint peer_channel;
     FileTransfer *transfer;
     std::deque<struct evbuffer *> msgs;
     static std::vector<EthernetSwift *> sessions;
@@ -55,8 +66,8 @@ private:
     static int RecvFrom(SOCKET sock, struct evbuffer *evb);
     tint NextSendTime();
     void Send();
-    static void Recv(unsigned char *srcmac, unsigned char *dstmac,
-			       struct evbuffer *evb);
+    void Recv(unsigned char *srcmac, unsigned char *dstmac,
+	      struct evbuffer *evb);
     static void SendEthCallback(int fd, short event, void *arg);
     static void RecvEthCallback(int fd, short event, void *arg);
 };

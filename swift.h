@@ -321,6 +321,7 @@ namespace swift {
         void            OnPexIn (const Address& addr);
 
         friend class Channel;
+        friend class EthernetSwift;
         friend uint64_t  Size (int fdes);
         friend bool      IsComplete (int fdes);
         friend uint64_t  Complete (int fdes);

@@ -26,9 +26,8 @@ TEST(Ethernet, Transfertest) {
 
     copy = swift::Open("doc/sofi-copy.jpg",fileobj->root_hash());
 
-    // Two EthernetSwift instances with selftest = true,
-    EthernetSwift *ethsend = new EthernetSwift(fileobj, true);
-    EthernetSwift *ethrecv = new EthernetSwift(FileTransfer::file(copy), true);
+    EthernetSwift *ethsend = new EthernetSwift(fileobj);
+    EthernetSwift *ethrecv = new EthernetSwift(FileTransfer::file(copy));
 
     evtimer_assign(&evcompl, Channel::evbase, IsCompleteCallback, NULL);
     event_base_dispatch(Channel::evbase);
@@ -43,10 +42,9 @@ TEST(Ethernet, Transfertest) {
 }
 
 int main (int argc, char** argv) {
-    std::string dev = "lo";
     swift::LibraryInit();
     Channel::evbase = event_base_new();
-    if (!EthernetSwift::Init(dev))
+    if (!EthernetSwift::Init("lo", true)) // selftest = true
 	return -1;
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
