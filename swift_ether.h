@@ -38,6 +38,8 @@ public:
 		struct evbuffer *evb);
     void OnRequest(const unsigned char *srcmac, const unsigned char *dstmac,
 		   struct evbuffer *evb);
+    void OnHash(const unsigned char *srcmac,
+		const unsigned char *dstmac, struct evbuffer *evb);
     void OnData(const unsigned char *srcmac, const unsigned char *dstmac,
 		struct evbuffer *evb);
     void OnClose(const unsigned char *srcmac, const unsigned char *dstmac,
@@ -51,9 +53,10 @@ private:
     static unsigned char mymac[ETH_ALEN];
     unsigned char peer_mac[ETH_ALEN];
     const static unsigned char brmac[ETH_ALEN];
-    tint channel;
+    tint my_channel;
     tint peer_channel;
     FileTransfer *transfer;
+    binmap_t rec_ranges;
     std::deque<struct evbuffer *> msgs;
     static std::vector<EthernetSwift *> sessions;
     struct event evsendeth;

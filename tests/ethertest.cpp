@@ -8,9 +8,9 @@ int size, copy;
 
 void IsCompleteCallback(int fd, short event, void *arg) {
     if (swift::SeqComplete(copy)!=size)
-	evtimer_add(&evcompl, tint2tv(TINT_SEC));
+    	evtimer_add(&evcompl, tint2tv(TINT_SEC));
     else
-	event_base_loopexit(Channel::evbase, NULL);
+    	event_base_loopexit(Channel::evbase, NULL);
 }
 
 TEST(Ethernet, Transfertest) {
@@ -30,6 +30,7 @@ TEST(Ethernet, Transfertest) {
     EthernetSwift *ethrecv = new EthernetSwift(FileTransfer::file(copy));
 
     evtimer_assign(&evcompl, Channel::evbase, IsCompleteCallback, NULL);
+    evtimer_add(&evcompl, tint2tv(TINT_SEC));
     event_base_dispatch(Channel::evbase);
 
     ASSERT_EQ(size,swift::SeqComplete(copy));
@@ -43,6 +44,7 @@ TEST(Ethernet, Transfertest) {
 
 int main (int argc, char** argv) {
     swift::LibraryInit();
+    Channel::debug_file = stdout;
     Channel::evbase = event_base_new();
     if (!EthernetSwift::Init("lo", true)) // selftest = true
 	return -1;
