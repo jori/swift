@@ -21,6 +21,7 @@
 
 //#include <glog/logging.h>
 #include "swift.h"
+#include "swift_ether.h"
 
 using namespace std;
 using namespace swift;
@@ -53,8 +54,8 @@ Channel::Channel    (FileTransfer* transfer, int socket, Address peer_addr) :
     data_in_dbl_(bin64_t::NONE), hint_out_size_(0),
     cwnd_(1), send_interval_(TINT_SEC), send_control_(PING_PONG_CONTROL),
     sent_since_recv_(0), ack_rcvd_recent_(0), ack_not_rcvd_recent_(0),
-    last_loss_time_(0), owd_min_bin_(0), owd_min_bin_start_(NOW), 
-    owd_cur_bin_(0), dgrams_sent_(0), dgrams_rcvd_(0), 
+    last_loss_time_(0), owd_min_bin_(0), owd_min_bin_start_(NOW),
+    owd_cur_bin_(0), dgrams_sent_(0), dgrams_rcvd_(0),
     data_in_(TINT_NEVER,bin64_t::NONE)
 {
     if (peer_==Address())
@@ -93,9 +94,9 @@ SOCKET Channel::Bind (Address address, sckrwecb_t callbacks) {
     dbnd_ensure ( (fd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0 );
     dbnd_ensure( make_socket_nonblocking(fd) );  // FIXME may remove this
     int enable = true;
-    dbnd_ensure ( setsockopt(fd, SOL_SOCKET, SO_SNDBUF, 
+    dbnd_ensure ( setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
                              (setsockoptptr_t)&sndbuf, sizeof(int)) == 0 );
-    dbnd_ensure ( setsockopt(fd, SOL_SOCKET, SO_RCVBUF, 
+    dbnd_ensure ( setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
                              (setsockoptptr_t)&rcvbuf, sizeof(int)) == 0 );
     //setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (setsockoptptr_t)&enable, sizeof(int));
     dbnd_ensure ( ::bind(fd, (sockaddr*)&addr, len) == 0 );
@@ -153,7 +154,7 @@ void Channel::Shutdown () {
     while (sock_count--)
         Close(sock_open[sock_count].sock);
 }
-    
+
 void     swift::SetTracker(const Address& tracker) {
     Channel::tracker = tracker;
 }
@@ -273,6 +274,11 @@ int      swift::Open (const char* filename, const Sha1Hash& hash) {
         // initiate tracker connections
         if (Channel::tracker!=Address())
             new Channel(ft);
+
+	// Start swift over ethernet peer
+	if (EthernetSwift::IsInit() &&
+	    !IsComplete(ft->file().file_descriptor()))
+	    new EthernetSwift(ft);
 
         return ft->file().file_descriptor();
     } else {

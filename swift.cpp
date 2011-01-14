@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "compat.h"
 #include "swift.h"
+#include "swift_ether.h"
 
 using namespace swift;
 
@@ -26,6 +27,7 @@ int main (int argc, char** argv) {
         {"hash",    required_argument, 0, 'h'},
         {"file",    required_argument, 0, 'f'},
         {"daemon",  no_argument, 0, 'd'},
+        {"ethdev",  no_argument, 0, 'e'},
         {"listen",  required_argument, 0, 'l'},
         {"tracker", required_argument, 0, 't'},
         {"debug",   no_argument, 0, 'D'},
@@ -37,6 +39,7 @@ int main (int argc, char** argv) {
 
     Sha1Hash root_hash;
     char* filename = 0;
+    char *devname = 0;
     bool daemonize = false, report_progress = false;
     Address bindaddr;
     Address tracker;
@@ -47,7 +50,7 @@ int main (int argc, char** argv) {
     Channel::evbase = event_base_new();
 
     int c;
-    while ( -1 != (c = getopt_long (argc, argv, ":h:f:dl:t:Dpg::w::", long_options, 0)) ) {
+    while ( -1 != (c = getopt_long (argc, argv, ":h:f:e:dl:t:Dpg::w::", long_options, 0)) ) {
         
         switch (c) {
             case 'h':
@@ -59,6 +62,9 @@ int main (int argc, char** argv) {
                 break;
             case 'f':
                 filename = strdup(optarg);
+                break;
+            case 'e':
+                devname = strdup(optarg);
                 break;
             case 'd':
                 daemonize = true;
@@ -124,6 +130,9 @@ int main (int argc, char** argv) {
     if (tracker!=Address())
         SetTracker(tracker);
 
+    if (devname)
+	EthernetSwift::Init(devname, false);
+
     // if (http_gw!=Address())
     //     InstallHTTPGateway(http_gw);
 
@@ -143,6 +152,7 @@ int main (int argc, char** argv) {
         fprintf(stderr,"  -f, --file\tname of file to use (root hash by default)\n");
         fprintf(stderr,"  -l, --listen\t[ip:|host:]port to listen to (default: random)\n");
         fprintf(stderr,"  -t, --tracker\t[ip:|host:]port of the tracker (default: none)\n");
+        fprintf(stderr,"  -e, --ethdev\tnetwork device name used in swift over ethernet (default: none)\n");
         fprintf(stderr,"  -D, --debug\tfile name for debugging logs (default: stdout)\n");
         fprintf(stderr,"  -p, --progress\treport transfer progress\n");
         fprintf(stderr,"  -g, --http\t[ip:|host:]port to bind HTTP gateway to (default localhost:8080)\n");

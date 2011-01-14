@@ -24,6 +24,7 @@ public:
     EthernetSwift(FileTransfer *ft);
     ~EthernetSwift();
     static bool Init(const std::string& dev, bool selftst=false);
+    static bool IsInit() { return initialised; }
     void Open(tint channel, tint rev_channel, const Sha1Hash& hash);
     void Request(tint channel, const bin64_t& range);
     void Hash(tint channel, const Sha1Hash& hash);

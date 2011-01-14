@@ -23,20 +23,13 @@ TEST(Ethernet, Transfertest) {
 
     int file = swift::Open("doc/sofi.jpg");
     FileTransfer* fileobj = FileTransfer::file(file);
-
     copy = swift::Open("doc/sofi-copy.jpg",fileobj->root_hash());
-
-    EthernetSwift *ethsend = new EthernetSwift(fileobj);
-    EthernetSwift *ethrecv = new EthernetSwift(FileTransfer::file(copy));
 
     evtimer_assign(&evcompl, Channel::evbase, IsCompleteCallback, NULL);
     evtimer_add(&evcompl, tint2tv(TINT_SEC));
     event_base_dispatch(Channel::evbase);
 
     ASSERT_EQ(size,swift::SeqComplete(copy));
-
-    delete ethsend;
-    delete ethrecv;
 
     swift::Close(file);
     swift::Close(copy);
