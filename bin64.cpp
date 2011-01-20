@@ -30,22 +30,6 @@ bin64_t::bin64_t(const uint32_t val) {
         v = val;
 }
 
-bin64_t bin64_t::next_dfsio (uint8_t floor) {
-    /*while (ret.is_right())
-        ret = ret.parent();
-    ret = ret.sibling();
-    while (ret.layer()>floor)
-        ret = ret.left();*/
-    if (is_right()) {
-        return parent();
-    } else {
-        bin64_t ret = sibling();
-        while (ret.layer()>floor)
-            ret = ret.left();
-        return ret;
-    }
-}
-
 int bin64_t::peaks (uint64_t length, bin64_t* peaks) {
     int pp=0;
     uint8_t layer = 0;

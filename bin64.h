@@ -157,9 +157,6 @@ struct bin64_t {
         return !(v & 1);
     }
 
-    /** Depth-first in-order binary tree traversal. */
-    bin64_t next_dfsio (uint8_t floor);
-
     /** Return the number of basic bins within this bin. */
     bin64_t width () const {
         return (tail_bits()+1)>>1;

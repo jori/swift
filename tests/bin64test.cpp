@@ -64,22 +64,6 @@ TEST(Bin64Test, Advanced) {
 
 }
 
-TEST(Bin64Test, Iteration) {
-    bin64_t i(1,0);
-    i = i.next_dfsio(1);
-    EXPECT_EQ(bin64_t(1,1),i);
-    i = i.next_dfsio(1);
-    EXPECT_EQ(bin64_t(2,0),i);
-    i = i.next_dfsio(1);
-    EXPECT_EQ(bin64_t(1,2),i);
-    i = i.next_dfsio(1);
-    EXPECT_EQ(bin64_t(1,3),i);
-    i = i.next_dfsio(1);
-    EXPECT_EQ(bin64_t(2,1),i);
-    i = i.next_dfsio(1);
-    EXPECT_EQ(bin64_t(3,0),i);
-}
-
 TEST(Bin64Test, Bits) {
     bin64_t all = bin64_t::ALL, none = bin64_t::NONE, big = bin64_t(40,18);
     uint32_t a32 = all.to32(), n32 = none.to32(), b32 = big.to32();

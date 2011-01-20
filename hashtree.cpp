@@ -124,6 +124,7 @@ void            HashTree::Submit () {
         print_error("mmap failed");
         return;
     }
+    size_t last_piece_size = (sizek_ - 1) % (1<<10) + 1;
     for (size_t i=0; i<sizek_; i++) {
         char kilo[1<<10];
         size_t rd = read(fd_,kilo,1<<10);
@@ -135,13 +136,14 @@ void            HashTree::Submit () {
         bin64_t pos(0,i);
         hashes_[pos] = Sha1Hash(kilo,rd);
         ack_out_.set(pos);
+        while (pos.is_right()){
+            pos = pos.parent();
+            hashes_[pos] = Sha1Hash(hashes_[pos.left()],hashes_[pos.right()]);
+        }
         complete_+=rd;
         completek_++;
     }
     for (int p=0; p<peak_count_; p++) {
-        if (!peaks_[p].is_base())
-            for(bin64_t b=peaks_[p].left_foot().parent(); b.within(peaks_[p]); b=b.next_dfsio(1))
-                hashes_[b] = Sha1Hash(hashes_[b.left()],hashes_[b.right()]);
         peak_hashes_[p] = hashes_[peaks_[p]];
     }
 
