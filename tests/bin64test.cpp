@@ -57,7 +57,7 @@ TEST(Bin64Test, Advanced) {
     EXPECT_TRUE(bin_t(0,12345).is_base());
     EXPECT_EQ(bin_t(0,2),bin_t(1,1).base_left());
     bin_t peaks[64];
-    int peak_count = bin_t::peaks(7,peaks);
+    int peak_count = gen_peaks(7,peaks);
     EXPECT_EQ(3,peak_count);
     EXPECT_EQ(bin_t(2,0),peaks[0]);
     EXPECT_EQ(bin_t(1,2),peaks[1]);

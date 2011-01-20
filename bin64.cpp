@@ -12,24 +12,6 @@
 const bin_t bin_t::NONE(0xffffffffffffffffULL);
 const bin_t bin_t::ALL(0x7fffffffffffffffULL);
 
-int bin_t::peaks (uint64_t length, bin_t* peaks) {
-    int pp=0;
-    uint8_t layer = 0;
-    while (length) {
-        if (length&1) 
-            peaks[pp++] = bin_t(layer,length^1);
-        length>>=1;
-        layer++;
-    }
-    for(int i=0; i<(pp>>1); i++) {
-        const bin_t memo = peaks[pp-1-i];
-        peaks[pp-1-i] = peaks[i];
-        peaks[i] = memo;
-    }
-    peaks[pp] = NONE;
-    return pp;
-}
-
 #include <stdio.h>
 
 const char* bin_t::str () const {

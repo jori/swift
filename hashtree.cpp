@@ -8,6 +8,7 @@
  */
 
 #include "hashtree.h"
+#include "bin_utils.h"
 //#include <openssl/sha.h>
 #include "sha1.h"
 #include <string.h>
@@ -115,7 +116,7 @@ complete_(0), completek_(0)
 void            HashTree::Submit () {
     size_ = file_size(fd_);
     sizek_ = (size_ + 1023) >> 10;
-    peak_count_ = bin_t::peaks(sizek_,peaks_);
+    peak_count_ = gen_peaks(sizek_,peaks_);
     int hashes_size = Sha1Hash::SIZE*sizek_*2;
     file_resize(hash_fd_,hashes_size);
     hashes_ = (Sha1Hash*) memory_map(hash_fd_,hashes_size);
@@ -158,7 +159,7 @@ void            HashTree::RecoverProgress () {
     size_t size = file_size(fd_);
     size_t sizek = (size + 1023) >> 10;
     bin_t peaks[64];
-    int peak_count = bin_t::peaks(sizek,peaks);
+    int peak_count = gen_peaks(sizek,peaks);
     for(int i=0; i<peak_count; i++) {
         Sha1Hash peak_hash;
         file_seek(hash_fd_,peaks[i].toUInt()*sizeof(Sha1Hash));

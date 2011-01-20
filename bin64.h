@@ -162,11 +162,6 @@ struct bin_t {
         not be reused or released. */
     const char* str () const;
 
-    /** The array must have 64 cells, as it is the max
-     number of peaks possible +1 (and there are no reason
-     to assume there will be less in any given case. */
-    static int peaks (uint64_t length, bin_t* peaks) ;
-
 private:
     uint64_t tail_bit () const {
         return (layer_bits()+1)>>1;

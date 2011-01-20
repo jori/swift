@@ -6,6 +6,31 @@
 
 
 /**
+ * Generating a list of peak bins for corresponding length
+ */
+inline int gen_peaks(uint64_t length, bin_t * peaks) {
+    int pp = 0;
+    uint8_t layer = 0;
+
+    while (length) {
+        if (length & 1)
+            peaks[pp++] = bin_t(((2 * length - 1) << layer) - 1);
+        length >>= 1;
+        layer++;
+    }
+
+    for(int i = 0; i < (pp >> 1); ++i) {
+        bin_t memo = peaks[pp - 1 - i];
+        peaks[pp - 1 - i] = peaks[i];
+        peaks[i] = memo;
+    }
+
+    peaks[pp] = bin_t::NONE;
+    return pp;
+}
+
+
+/**
  * Checking for that the bin value is fit to uint32_t
  */
 inline bool bin_isUInt32(const bin_t & bin) {
