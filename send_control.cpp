@@ -42,12 +42,12 @@ tint    Channel::SwitchSendControl (int control_mode) {
         case KEEP_ALIVE_CONTROL:
             send_interval_ = rtt_avg_; //max(TINT_SEC/10,rtt_avg_);
             dev_avg_ = max(TINT_SEC,rtt_avg_);
-            data_out_cap_ = bin64_t::ALL;
+            data_out_cap_ = bin_t::ALL;
             cwnd_ = 1;
             break;
         case PING_PONG_CONTROL:
             dev_avg_ = max(TINT_SEC,rtt_avg_);
-            data_out_cap_ = bin64_t::ALL;
+            data_out_cap_ = bin_t::ALL;
             cwnd_ = 1;
             break;
         case SLOW_START_CONTROL:

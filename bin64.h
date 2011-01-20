@@ -24,25 +24,25 @@
     is made in terms of binary trees: left, right,
     sibling, parent, etc.
  */
-struct bin64_t {
+struct bin_t {
     uint64_t v;
     static const uint64_t NONE;
     static const uint64_t ALL;
     static const uint32_t NONE32;
     static const uint32_t ALL32;
 
-    bin64_t() : v(NONE) {}
-    bin64_t(const bin64_t&b) : v(b.v) {}
-    bin64_t(const uint32_t val) ;
-    bin64_t(const uint64_t val) : v(val) {}
-    bin64_t(uint8_t layer, uint64_t offset) :
+    bin_t() : v(NONE) {}
+    bin_t(const bin_t&b) : v(b.v) {}
+    bin_t(const uint32_t val) ;
+    bin_t(const uint64_t val) : v(val) {}
+    bin_t(uint8_t layer, uint64_t offset) :
         v( (offset<<(layer+1)) | ((1ULL<<layer)-1) ) {}
     operator uint64_t () const { return v; }
     uint32_t to32() const ;
-    bool operator == (bin64_t& b) const { return v==b.v; }
+    bool operator == (bin_t& b) const { return v==b.v; }
 
-    static bin64_t none () { return NONE; }
-    static bin64_t all () { return ALL; }
+    static bin_t none () { return NONE; }
+    static bin_t all () { return ALL; }
 
     uint64_t tail_bits () const {
         return v ^ (v+1);
@@ -53,9 +53,9 @@ struct bin64_t {
     }
 
     /** Get the sibling interval in the binary tree. */
-    bin64_t sibling () const {
+    bin_t sibling () const {
         // if (v==ALL) return NONE;
-        return bin64_t(v^(tail_bit()<<1));
+        return bin_t(v^(tail_bit()<<1));
     }
 
     int layer () const {
@@ -86,28 +86,28 @@ struct bin64_t {
     }
 
     /** Get a child bin; either right(true) or left(false). */
-    bin64_t to (bool right) const {
+    bin_t   to (bool right) const {
         if (!(v&1))
             return NONE;
         uint64_t tb = ((tail_bits() >> 1) + 1) >> 1;
         if (right)
-            return bin64_t(v + tb);
-        return bin64_t(v ^ tb);
+            return bin_t(v + tb);
+        return bin_t(v ^ tb);
     }
 
     /** Get the left child bin. */
-    bin64_t left () const {
+    bin_t   left () const {
         return to(false);
     }
 
     /** Get the right child bin. */
-    bin64_t right () const {
+    bin_t   right () const {
         return to(true);
     }
 
     /** Check whether this bin is within the specified bin. */
-    bool    within (bin64_t maybe_asc) {
-        if (maybe_asc==bin64_t::NONE)
+    bool    within (bin_t maybe_asc) {
+        if (maybe_asc==bin_t::NONE)
             return false;
         uint64_t short_tail = maybe_asc.tail_bits();
         if (tail_bits()>short_tail)
@@ -116,7 +116,7 @@ struct bin64_t {
     }
 
     /** Left or right, depending whether the destination is. */
-    bin64_t towards (bin64_t dest) const {
+    bin_t   towards (bin_t dest) const {
         if (!dest.within(*this))
             return NONE;
         if (dest.within(left()))
@@ -126,14 +126,14 @@ struct bin64_t {
     }
 
     /** Twist/untwist a bin number according to the mask. */
-    bin64_t twisted (uint64_t mask) const {
-        return bin64_t( v ^ ((mask<<1)&~tail_bits()) );
+    bin_t   twisted (uint64_t mask) const {
+        return bin_t( v ^ ((mask<<1)&~tail_bits()) );
     }
 
     /** Get the paretn bin. */
-    bin64_t parent () const {
+    bin_t   parent () const {
         uint64_t tbs = tail_bits(), ntbs = (tbs+1)|tbs;
-        return bin64_t( (v&~ntbs) | tbs );
+        return bin_t( (v&~ntbs) | tbs );
     }
 
     /** Check whether this bin is the left sibling. */
@@ -146,10 +146,10 @@ struct bin64_t {
     inline bool is_right() const { return !is_left(); }
 
     /** Get the leftmost basic bin within this bin. */
-    bin64_t left_foot () const {
+    bin_t   left_foot () const {
         if (v==NONE)
             return NONE;
-        return bin64_t(0,base_offset());
+        return bin_t(0,base_offset());
     }
 
     /** Whether layer is 0. */
@@ -158,7 +158,7 @@ struct bin64_t {
     }
 
     /** Return the number of basic bins within this bin. */
-    bin64_t width () const {
+    bin_t   width () const {
         return (tail_bits()+1)>>1;
     }
     
@@ -171,7 +171,7 @@ struct bin64_t {
     /** The array must have 64 cells, as it is the max
      number of peaks possible +1 (and there are no reason
      to assume there will be less in any given case. */
-    static int peaks (uint64_t length, bin64_t* peaks) ;
+    static int peaks (uint64_t length, bin_t* peaks) ;
 
 };
 

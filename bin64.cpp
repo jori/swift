@@ -8,12 +8,12 @@
  */
 #include "bin64.h"
 
-const uint64_t bin64_t::NONE = 0xffffffffffffffffULL;
-const uint64_t bin64_t::ALL = 0x7fffffffffffffffULL;
-const uint32_t bin64_t::NONE32 = 0xffffffffU;
-const uint32_t bin64_t::ALL32 = 0x7fffffffU;
+const uint64_t bin_t::NONE = 0xffffffffffffffffULL;
+const uint64_t bin_t::ALL = 0x7fffffffffffffffULL;
+const uint32_t bin_t::NONE32 = 0xffffffffU;
+const uint32_t bin_t::ALL32 = 0x7fffffffU;
 
-uint32_t bin64_t::to32() const {
+uint32_t bin_t::to32() const {
     if (v<0xffffffff && v!=0x7fffffff)
         return (uint32_t)v;
     if (v==ALL)
@@ -21,7 +21,7 @@ uint32_t bin64_t::to32() const {
     return NONE32;
 }
 
-bin64_t::bin64_t(const uint32_t val) {
+bin_t::bin_t(const uint32_t val) {
     if (val==ALL32)
         v = ALL;
     else if (val==NONE32)
@@ -30,12 +30,12 @@ bin64_t::bin64_t(const uint32_t val) {
         v = val;
 }
 
-int bin64_t::peaks (uint64_t length, bin64_t* peaks) {
+int bin_t::peaks (uint64_t length, bin_t* peaks) {
     int pp=0;
     uint8_t layer = 0;
     while (length) {
         if (length&1) 
-            peaks[pp++] = bin64_t(layer,length^1);
+            peaks[pp++] = bin_t(layer,length^1);
         length>>=1;
         layer++;
     }
@@ -50,7 +50,7 @@ int bin64_t::peaks (uint64_t length, bin64_t* peaks) {
 
 #include <stdio.h>
 
-const char* bin64_t::str () const {
+const char* bin_t::str () const {
     static char _b64sr[4][32];
     static int _rsc;
     _rsc = (_rsc+1) & 3;

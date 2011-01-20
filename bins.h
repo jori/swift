@@ -36,10 +36,10 @@ public:
     ~binmap_t(); 
 
     /** Get value for the bin. */
-    uint16_t    get (bin64_t bin); 
+    uint16_t    get (bin_t bin);
     
     /** Set value for the bin. */
-    void        set (bin64_t bin, fill_t val=FILLED); 
+    void        set (bin_t bin, fill_t val=FILLED);
     
     typedef enum {
         OR_OP,
@@ -49,25 +49,25 @@ public:
     } bin_op_t;
     
     /** Copy a range from another binmap. */
-    void        range_op (binmap_t& mask, bin64_t range, bin_op_t op);
-    void        range_copy (binmap_t& mask, bin64_t range)
+    void        range_op (binmap_t& mask, bin_t range, bin_op_t op);
+    void        range_copy (binmap_t& mask, bin_t range)
         {   range_op(mask, range, COPY_OP);   }
-    void        range_remove (binmap_t& mask, bin64_t range)
+    void        range_remove (binmap_t& mask, bin_t range)
         {   range_op(mask, range, REMOVE_OP);   }
-    void        range_or (binmap_t& mask, bin64_t range)
+    void        range_or (binmap_t& mask, bin_t range)
         {   range_op(mask, range, OR_OP);   }
-    void        range_and (binmap_t& mask, bin64_t range)
+    void        range_and (binmap_t& mask, bin_t range)
         {   range_op(mask, range, AND_OP);   }
     
     /** Find the leftmost bin within the specified range which is
         either filled or empty. */
-    bin64_t     find (const bin64_t range, fill_t seek=EMPTY) ;
+    bin_t       find (const bin_t range, fill_t seek=EMPTY) ;
     
     /** Find the leftmost bin within the specified range which is
         either filled or empty. Bins set to 1 in the filter binmap cannot
         be returned. In fact, this is an incremental bitwise op. */
-    bin64_t     find_filtered
-        (binmap_t& filter, bin64_t range, fill_t seek=EMPTY) ;
+    bin_t       find_filtered
+        (binmap_t& filter, bin_t range, fill_t seek=EMPTY) ;
     
     /** Bitwise SUB; any bins set to one in the filter binmap should
         be set to 0 in this binmap. */
@@ -87,18 +87,18 @@ public:
     uint64_t    seq_length ();
     
     /** Return the topmost solid bin which covers the specified bin. */
-    bin64_t     cover(bin64_t val);
+    bin_t       cover(bin_t val);
 
     uint64_t    mass ();
     
     /** Return true if the range is solid (either all-0 or 1). If val is
         specified, the interval must be both solid and filled/empty,
         depending on the value. */
-    bool        is_solid (bin64_t range=bin64_t::ALL, fill_t val=MIXED) ;
+    bool        is_solid (bin_t range=bin_t::ALL, fill_t val=MIXED) ;
     /** Whether range/bin is empty. */
-    bool        is_empty (bin64_t range=bin64_t::ALL) { return is_solid(range,EMPTY); }
+    bool        is_empty (bin_t range=bin_t::ALL) { return is_solid(range,EMPTY); }
     /** Whether range/bin is filled. */
-    bool        is_filled (bin64_t range=bin64_t::ALL) { return is_solid(range,FILLED); }
+    bool        is_filled (bin_t range=bin_t::ALL) { return is_solid(range,FILLED); }
 
     /** Clear everything, empty all bins. */
     void        clear ();
@@ -120,7 +120,7 @@ public:
                 layer bits per one bitmap bit). 
         @param bits   uint16_t array to put bitmap into; must have enough
                       of space, i.e. 2**(range.layer()-height-4) cells.  */
-    void        to_coarse_bitmap (uint16_t* bits, bin64_t range, uint8_t height);
+    void        to_coarse_bitmap (uint16_t* bits, bin_t range, uint8_t height);
     
 private:
     
@@ -170,7 +170,7 @@ private:
     static uint32_t split16to32(uint16_t half);
     static int join32to16(uint32_t cell);
 
-    void        map16 (uint16_t* target, bin64_t range);
+    void        map16 (uint16_t* target, bin_t range);
     
     friend class iterator;
 #ifdef FRIEND_TEST
@@ -186,13 +186,13 @@ private:
  or FILLED/EMPTY. */
 class iterator {
 public: // rm this
-    binmap_t        *host;
+    binmap_t    *host;
     uint32_t    history[64];
     uint32_t    half;
     uint8_t     layer_;
-    bin64_t     pos;  // TODO: half[] layer bin
+    bin_t       pos;  // TODO: half[] layer bin
 public:
-    iterator(binmap_t* host, bin64_t start=bin64_t(0,0), bool split=false);
+    iterator(binmap_t* host, bin_t start=bin_t(0,0), bool split=false);
     ~iterator();
     bool deep () { return host->deep(half); }
     bool solid () { 
@@ -205,12 +205,12 @@ public:
     void right() {to(1);}
     /** Move to the next defined (non-deep, flat) cell.
         If solid==true, move to a solid (0xffff/0x0) cell. */
-    bin64_t next (bool stop_undeep=true, bool stop_solid=false, uint8_t stop_layer=0);
-    bin64_t next_solid () { return next(false, true,0); }
-    bin64_t bin() { return pos; }
-    void towards(bin64_t bin) {
-        bin64_t next = pos.towards(bin);
-        assert(next!=bin64_t::NONE);
+    bin_t next (bool stop_undeep=true, bool stop_solid=false, uint8_t stop_layer=0);
+    bin_t next_solid () { return next(false, true,0); }
+    bin_t bin() { return pos; }
+    void towards(bin_t bin) {
+        bin_t next = pos.towards(bin);
+        assert(next!=bin_t::NONE);
         to(next.is_right());
     }
     void parent() ;
@@ -221,13 +221,13 @@ public:
 
 
 class binheap {
-    bin64_t     *heap_;
+    bin_t       *heap_;
     uint32_t    filled_;
     uint32_t    size_;
 public:
     binheap();
-    bin64_t pop();
-    void    push(bin64_t);
+    bin_t   pop();
+    void    push(bin_t);
     bool    empty() const { return !filled_; }
     void    extend();
     ~binheap();

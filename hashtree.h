@@ -57,7 +57,7 @@ class HashTree {
     Sha1Hash        *hashes_;
     /** Merkle hash tree: peak hashes */
     Sha1Hash        peak_hashes_[64];
-    bin64_t         peaks_[64];
+    bin_t           peaks_[64];
     int             peak_count_;
     /** File descriptor to put hashes to */
     int             fd_;
@@ -70,14 +70,14 @@ class HashTree {
     /**    Part of the tree currently checked. */
     size_t          complete_;
     size_t          completek_;
-    binmap_t            ack_out_;
+    binmap_t        ack_out_;
     
 protected:
     
     void            Submit();
     void            RecoverProgress();
     Sha1Hash        DeriveRoot();
-    bool            OfferPeakHash (bin64_t pos, const Sha1Hash& hash);
+    bool            OfferPeakHash (bin_t pos, const Sha1Hash& hash);
     
 public:
     
@@ -87,10 +87,10 @@ public:
     /** Offer a hash; returns true if it verified; false otherwise.
      Once it cannot be verified (no sibling or parent), the hash
      is remembered, while returning false. */
-    bool            OfferHash (bin64_t pos, const Sha1Hash& hash);
+    bool            OfferHash (bin_t pos, const Sha1Hash& hash);
     /** Offer data; the behavior is the same as with a hash:
      accept or remember or drop. Returns true => ACK is sent. */
-    bool            OfferData (bin64_t bin, const char* data, size_t length);
+    bool            OfferData (bin_t bin, const char* data, size_t length);
     /** For live streaming. Not implemented yet. */
     int             AppendData (char* data, int length) ;
     
@@ -98,13 +98,13 @@ public:
     /** Returns the number of peaks (read on peak hashes). */
     int             peak_count () const { return peak_count_; }
     /** Returns the i-th peak's bin number. */
-    bin64_t         peak (int i) const { return peaks_[i]; }
+    bin_t           peak (int i) const { return peaks_[i]; }
     /** Returns peak hash #i. */
     const Sha1Hash& peak_hash (int i) const { return peak_hashes_[i]; }
     /** Return the peak bin the given bin belongs to. */
-    bin64_t         peak_for (bin64_t pos) const;
+    bin_t           peak_for (bin_t pos) const;
     /** Return a (Merkle) hash for the given bin. */
-    const Sha1Hash& hash (bin64_t pos) const {return hashes_[pos];}
+    const Sha1Hash& hash (bin_t pos) const {return hashes_[pos];}
     /** Give the root hash, which is effectively an identifier of this file. */
     const Sha1Hash& root_hash () const { return root_hash_; }
     /** Get file size, in bytes. */
@@ -122,8 +122,8 @@ public:
     bool            is_complete () 
         { return size_ && complete_==size_; }
     /** The binmap of complete packets. */
-    binmap_t&           ack_out () { return ack_out_; }
-    
+    binmap_t&       ack_out () { return ack_out_; }
+
     ~HashTree ();
 
     

@@ -88,7 +88,7 @@ void HttpGwMayWriteCallback (SOCKET sink) {
 }
 
 
-void HttpGwSwiftProgressCallback (int transfer, bin64_t bin) {
+void HttpGwSwiftProgressCallback (int transfer, bin_t bin) {
     for (int httpc=0; httpc<http_gw_reqs_open; httpc++)
         if (http_requests[httpc].transfer==transfer)
             if ( (bin.base_offset()<<10) == http_requests[httpc].offset ) {
@@ -101,8 +101,8 @@ void HttpGwSwiftProgressCallback (int transfer, bin64_t bin) {
 }
 
 
-void HttpGwFirstProgressCallback (int transfer, bin64_t bin) {
-    if (bin!=bin64_t(0,0)) // need the first packet
+void HttpGwFirstProgressCallback (int transfer, bin_t bin) {
+    if (bin!=bin_t(0,0)) // need the first packet
         return;
     swift::RemoveProgressCallback(transfer,&HttpGwFirstProgressCallback);
     swift::AddProgressCallback(transfer,&HttpGwSwiftProgressCallback,0);
@@ -181,7 +181,7 @@ void HttpGwNewRequestCallback (SOCKET http_conn){
         file = swift::Open(hash,root_hash);
     req->transfer = file;
     if (swift::Size(file)) {
-        HttpGwFirstProgressCallback(file,bin64_t(0,0));
+        HttpGwFirstProgressCallback(file,bin_t(0,0));
     } else {
         swift::AddProgressCallback(file,&HttpGwFirstProgressCallback,0);
         sckrwecb_t install (http_conn,NULL,NULL,HttpGwCloseConnection);

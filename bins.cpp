@@ -179,7 +179,7 @@ uint16_t    binmap_t::alloc_cell () {
 }
 
 
-bin64_t iterator::next (bool stop_undeep, bool stop_solid, uint8_t stop_layer) {
+bin_t iterator::next (bool stop_undeep, bool stop_solid, uint8_t stop_layer) {
     while (pos.is_right())
         parent();
     sibling();
@@ -191,12 +191,12 @@ bin64_t iterator::next (bool stop_undeep, bool stop_solid, uint8_t stop_layer) {
 }
 
 
-iterator::iterator(binmap_t* host_, bin64_t start, bool split) { 
+iterator::iterator(binmap_t* host_, bin_t start, bool split) {
     host = host_;
     half = 0;
     for(int i=0; i<64; i++)
         history[i] = 1;
-    pos = bin64_t(host->height,0);
+    pos = bin_t(host->height,0);
     layer_ = host->height;
     while (!start.within(pos))
         parent();
@@ -257,7 +257,7 @@ void iterator::parent () {
 }
 
 
-bin64_t binmap_t::find (const bin64_t range, fill_t seek) {
+bin_t binmap_t::find (const bin_t range, fill_t seek) {
     iterator i(this,range,true);
     fill_t stop = seek==EMPTY ? FILLED : EMPTY;
     while (true) {
@@ -272,12 +272,12 @@ bin64_t binmap_t::find (const bin64_t range, fill_t seek) {
         i.parent();
         i.right();
     }
-    return bin64_t::NONE;
+    return bin_t::NONE;
 }
 
 
-uint16_t binmap_t::get (bin64_t bin) {
-    if (bin==bin64_t::NONE)
+uint16_t binmap_t::get (bin_t bin) {
+    if (bin==bin_t::NONE)
         return EMPTY;
     iterator i(this,bin,true);
     //while ( i.pos!=bin && 
@@ -290,12 +290,12 @@ uint16_t binmap_t::get (bin64_t bin) {
 
 
 void binmap_t::clear () {
-    set(bin64_t(height,0),EMPTY);
+    set(bin_t(height,0),EMPTY);
 }
 
 
 uint64_t binmap_t::mass () {
-    iterator i(this,bin64_t(0,0),false);
+    iterator i(this,bin_t(0,0),false);
     uint64_t ret = 0;
     while (!i.solid())
         i.left();
@@ -308,8 +308,8 @@ uint64_t binmap_t::mass () {
 }
 
 
-void binmap_t::set (bin64_t bin, fill_t val) {
-    if (bin==bin64_t::NONE)
+void binmap_t::set (bin_t bin, fill_t val) {
+    if (bin==bin_t::NONE)
         return;
     assert(val==FILLED || val==EMPTY);
     iterator i(this,bin,false);
@@ -333,7 +333,7 @@ uint64_t*   binmap_t::get_stripes (int& count) {
     count = 0;
     uint16_t cur = binmap_t::EMPTY;
     stripes[count++] = 0;
-    iterator i(this,bin64_t(0,0),false);
+    iterator i(this,bin_t(0,0),false);
     while (!i.solid())
         i.left();
 
@@ -361,7 +361,7 @@ uint64_t*   binmap_t::get_stripes (int& count) {
 
 void    binmap_t::remove (binmap_t& b) {
     uint8_t start_lr = b.height>height ? b.height : height;
-    bin64_t top(start_lr,0);
+    bin_t top(start_lr,0);
     iterator zis(this,top), zat(&b,top);
     while (!zis.end()) {
         while (zis.deep() || zat.deep()) {
@@ -378,23 +378,23 @@ void    binmap_t::remove (binmap_t& b) {
 }
 
 
-bin64_t     binmap_t::cover(bin64_t val) {
-    if (val==bin64_t::NONE)
+bin_t     binmap_t::cover(bin_t val) {
+    if (val==bin_t::NONE)
         return val;
     iterator i(this,val,false);
     while (i.pos!=val && !i.solid())
         i.towards(val);
     if (!i.solid())
-        return bin64_t::NONE;
+        return bin_t::NONE;
     return i.pos;
 }
 
 
-bin64_t     binmap_t::find_filtered 
-    (binmap_t& filter, bin64_t range, fill_t seek)  
+bin_t     binmap_t::find_filtered
+    (binmap_t& filter, bin_t range, fill_t seek)
 {
-    if (range==bin64_t::ALL)
-        range = bin64_t ( height>filter.height ? height : filter.height, 0 );
+    if (range==bin_t::ALL)
+        range = bin_t ( height>filter.height ? height : filter.height, 0 );
     iterator ti(this,range,true), fi(&filter,range,true);
     fill_t stop = seek==EMPTY ? FILLED : EMPTY;
     while (true) {
@@ -415,12 +415,12 @@ bin64_t     binmap_t::find_filtered
             break;
         ti.sibling(), fi.sibling();
     }
-    return bin64_t::NONE;    
+    return bin_t::NONE;
 }
 
-void        binmap_t::range_op (binmap_t& mask, bin64_t range, bin_op_t op) {
-    if (range==bin64_t::ALL)
-        range = bin64_t ( height>mask.height ? height : mask.height, 0 );
+void        binmap_t::range_op (binmap_t& mask, bin_t range, bin_op_t op) {
+    if (range==bin_t::ALL)
+        range = bin_t ( height>mask.height ? height : mask.height, 0 );
     iterator zis(this,range,true), zat(&mask,range,true);
     while (zis.pos.within(range)) {
         while (zis.deep() || zat.deep()) {
@@ -449,7 +449,7 @@ void        binmap_t::range_op (binmap_t& mask, bin64_t range, bin_op_t op) {
 }
 
 uint64_t    binmap_t::seq_length () {
-    iterator i(this,bin64_t(height,0));
+    iterator i(this,bin_t(height,0));
     if (!i.deep() && *i==FILLED)
         return i.pos.width();
     while (!i.pos.is_base()) {
@@ -462,8 +462,8 @@ uint64_t    binmap_t::seq_length () {
 }
 
 
-bool        binmap_t::is_solid (bin64_t range, fill_t val)  {
-    if (range==bin64_t::ALL) 
+bool        binmap_t::is_solid (bin_t range, fill_t val)  {
+    if (range==bin_t::ALL)
         return !deep(0) && (is_mixed(val) || halves[0]==val);
     iterator i(this,range,false);
     while ( i.pos!=range && (i.deep() || !i.solid()) )
@@ -472,7 +472,7 @@ bool        binmap_t::is_solid (bin64_t range, fill_t val)  {
 }
 
 
-void    binmap_t::map16 (uint16_t* target, bin64_t range) {
+void    binmap_t::map16 (uint16_t* target, bin_t range) {
     iterator lead(this,range,true);
     if (!lead.deep()) {
         *target = *lead;
@@ -492,24 +492,24 @@ void    binmap_t::map16 (uint16_t* target, bin64_t range) {
 }
 
 
-void    binmap_t::to_coarse_bitmap (uint16_t* bits, bin64_t range, uint8_t height) {
+void    binmap_t::to_coarse_bitmap (uint16_t* bits, bin_t range, uint8_t height) {
     //assert(range.layer()-height>=4);
     int height16 = range.layer()-height-4;
     int wordwidth = height16 > 0 ? (1 << height16) : 1;
     int offset = height16 > 0 ? (range.offset() << height16) : 
                                 (range.offset() >> -height16); 
     for(int i=0; i<wordwidth; i++) 
-        map16(bits+i,bin64_t(height+4,offset+i));
+        map16(bits+i,bin_t(height+4,offset+i));
 }
 
 
 binheap::binheap() {
     size_ = 32;
-    heap_ = (bin64_t*) malloc(size_*sizeof(bin64_t));
+    heap_ = (bin_t*) malloc(size_*sizeof(bin_t));
     filled_ = 0;
 }
 
-bool bincomp (const bin64_t& a, const bin64_t& b) {
+bool bincomp (const bin_t& a, const bin_t& b) {
     register uint64_t ab = a.base_offset(), bb = b.base_offset();
     if (ab==bb)
         return a.tail_bit() < b.tail_bit();
@@ -517,7 +517,7 @@ bool bincomp (const bin64_t& a, const bin64_t& b) {
         return ab > bb;
 }
 
-bool bincomp_rev (const bin64_t& a, const bin64_t& b) {
+bool bincomp_rev (const bin_t& a, const bin_t& b) {
     register uint64_t ab = a.base_offset(), bb = b.base_offset();
     if (ab==bb)
         return a.tail_bit() > b.tail_bit();
@@ -525,10 +525,10 @@ bool bincomp_rev (const bin64_t& a, const bin64_t& b) {
         return ab < bb;
 }
 
-bin64_t binheap::pop() {
+bin_t binheap::pop() {
     if (!filled_)
-        return bin64_t::NONE;
-    bin64_t ret = heap_[0];
+        return bin_t::NONE;
+    bin_t ret = heap_[0];
     std::pop_heap(heap_, heap_+filled_--,bincomp);
     while (filled_ && heap_[0].within(ret))
         std::pop_heap(heap_, heap_+filled_--,bincomp);
@@ -544,11 +544,11 @@ void    binheap::extend() {
     filled_ = solid+1;
     if (2*filled_>size_) {
         size_ <<= 1;
-        heap_ = (bin64_t*) realloc(heap_,size_*sizeof(bin64_t));
+        heap_ = (bin_t*) realloc(heap_,size_*sizeof(bin_t));
     }
 }
 
-void    binheap::push(bin64_t val) {
+void    binheap::push(bin_t val) {
     if (filled_==size_)
         extend();
     heap_[filled_++] = val;

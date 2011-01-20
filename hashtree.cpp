@@ -115,7 +115,7 @@ complete_(0), completek_(0)
 void            HashTree::Submit () {
     size_ = file_size(fd_);
     sizek_ = (size_ + 1023) >> 10;
-    peak_count_ = bin64_t::peaks(sizek_,peaks_);
+    peak_count_ = bin_t::peaks(sizek_,peaks_);
     int hashes_size = Sha1Hash::SIZE*sizek_*2;
     file_resize(hash_fd_,hashes_size);
     hashes_ = (Sha1Hash*) memory_map(hash_fd_,hashes_size);
@@ -133,7 +133,7 @@ void            HashTree::Submit () {
             hashes_=NULL;
             return;
         }
-        bin64_t pos(0,i);
+        bin_t pos(0,i);
         hashes_[pos] = Sha1Hash(kilo,rd);
         ack_out_.set(pos);
         while (pos.is_right()){
@@ -157,8 +157,8 @@ void            HashTree::Submit () {
 void            HashTree::RecoverProgress () {
     size_t size = file_size(fd_);
     size_t sizek = (size + 1023) >> 10;
-    bin64_t peaks[64];
-    int peak_count = bin64_t::peaks(sizek,peaks);
+    bin_t peaks[64];
+    int peak_count = bin_t::peaks(sizek,peaks);
     for(int i=0; i<peak_count; i++) {
         Sha1Hash peak_hash;
         file_seek(hash_fd_,peaks[i]*sizeof(Sha1Hash));
@@ -175,7 +175,7 @@ void            HashTree::RecoverProgress () {
     Sha1Hash kilo_zero(zeros,1<<10);
     for(int p=0; p<packet_size(); p++) {
         char buf[1<<10];
-        bin64_t pos(0,p);
+        bin_t pos(0,p);
         if (hashes_[pos]==Sha1Hash::ZERO)
             continue;
         size_t rd = read(fd_,buf,1<<10);
@@ -195,10 +195,10 @@ void            HashTree::RecoverProgress () {
 }
 
 
-bool            HashTree::OfferPeakHash (bin64_t pos, const Sha1Hash& hash) {
+bool            HashTree::OfferPeakHash (bin_t pos, const Sha1Hash& hash) {
     assert(!size_);
     if (peak_count_) {
-        bin64_t last_peak = peaks_[peak_count_-1];
+        bin_t last_peak = peaks_[peak_count_-1];
         if ( pos.layer()>=last_peak.layer() ||
             pos.base_offset()!=last_peak.base_offset()+last_peak.width() )
             peak_count_ = 0;
@@ -247,10 +247,10 @@ bool            HashTree::OfferPeakHash (bin64_t pos, const Sha1Hash& hash) {
 
 Sha1Hash        HashTree::DeriveRoot () {
     int c = peak_count_-1;
-    bin64_t p = peaks_[c];
+    bin_t p = peaks_[c];
     Sha1Hash hash = peak_hashes_[c];
     c--;
-    while (p!=bin64_t::ALL) {
+    while (p!=bin_t::ALL) {
         if (p.is_left()) {
             p = p.parent();
             hash = Sha1Hash(hash,Sha1Hash::ZERO);
@@ -273,19 +273,19 @@ int         HashTree::AppendData (char* data, int length) {
 }
 
 
-bin64_t         HashTree::peak_for (bin64_t pos) const {
+bin_t         HashTree::peak_for (bin_t pos) const {
     int pi=0;
     while (pi<peak_count_ && !pos.within(peaks_[pi]))
         pi++;
-    return pi==peak_count_ ? bin64_t(bin64_t::NONE) : peaks_[pi];
+    return pi==peak_count_ ? bin_t(bin_t::NONE) : peaks_[pi];
 }
 
 
-bool            HashTree::OfferHash (bin64_t pos, const Sha1Hash& hash) {
+bool            HashTree::OfferHash (bin_t pos, const Sha1Hash& hash) {
     if (!size_)  // only peak hashes are accepted at this point
         return OfferPeakHash(pos,hash);
-    bin64_t peak = peak_for(pos);
-    if (peak==bin64_t::NONE)
+    bin_t peak = peak_for(pos);
+    if (peak==bin_t::NONE)
         return false;
     if (peak==pos)
         return hash == hashes_[pos];
@@ -294,7 +294,7 @@ bool            HashTree::OfferHash (bin64_t pos, const Sha1Hash& hash) {
     hashes_[pos] = hash;
     if (!pos.is_base())
         return false; // who cares?
-    bin64_t p = pos;
+    bin_t p = pos;
     Sha1Hash uphash = hash;
     while ( p!=peak && ack_out_.get(p)==binmap_t::EMPTY ) {
         hashes_[p] = uphash;
@@ -305,17 +305,17 @@ bool            HashTree::OfferHash (bin64_t pos, const Sha1Hash& hash) {
 }
 
 
-bool            HashTree::OfferData (bin64_t pos, const char* data, size_t length) {
+bool            HashTree::OfferData (bin_t pos, const char* data, size_t length) {
     if (!size())
         return false;
     if (!pos.is_base())
         return false;
-    if (length<1024 && pos!=bin64_t(0,sizek_-1))
+    if (length<1024 && pos!=bin_t(0,sizek_-1))
         return false;
     if (ack_out_.get(pos)==binmap_t::FILLED)
         return true; // to set data_in_
-    bin64_t peak = peak_for(pos);
-    if (peak==bin64_t::NONE)
+    bin_t peak = peak_for(pos);
+    if (peak==bin_t::NONE)
         return false;
 
     Sha1Hash data_hash(data,length);

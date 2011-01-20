@@ -36,15 +36,15 @@ uint8_t rand_norm (uint8_t lim) {
 
 TEST(FreemapTest,Freemap) {
     binmap_t space;
-    const bin64_t top(30,0);
+    const bin_t top(30,0);
     space.set(top,binmap_t::EMPTY);
-    typedef std::pair<int,bin64_t> timebin_t;
+    typedef std::pair<int,bin_t> timebin_t;
     typedef std::set<timebin_t> ts_t;
     ts_t to_free;
     for (int t=0; t<1000000; t++) {
         if (t<500000 || t>504000) {
             uint8_t lr = rand_norm(28);
-            bin64_t alloc = space.find(top);
+            bin_t alloc = space.find(top);
             while (alloc.layer()>lr)
                 alloc = alloc.left();
             ASSERT_NE(0ULL,~alloc);
@@ -58,7 +58,7 @@ TEST(FreemapTest,Freemap) {
         }
         // now, the red-black tree
         while (to_free.begin()->first<=t) {
-            bin64_t freebin = to_free.begin()->second;
+            bin_t freebin = to_free.begin()->second;
             to_free.erase(to_free.begin());
             space.set(freebin,binmap_t::EMPTY);
             printf("freed at %lli\n",

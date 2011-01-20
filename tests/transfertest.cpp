@@ -22,12 +22,12 @@ Sha1Hash A,B,C,D,E,AB,CD,ABCD,E0,E000,ABCDE000,ROOT;
 TEST(TransferTest,TBHeap) {
     tbheap tbh;
     ASSERT_TRUE(tbh.is_empty());
-    tbh.push(tintbin(3,bin64_t::NONE));
-    tbh.push(tintbin(1,bin64_t::NONE));
+    tbh.push(tintbin(3,bin_t::NONE));
+    tbh.push(tintbin(1,bin_t::NONE));
     ASSERT_EQ(2,tbh.size());
-    tbh.push(tintbin(2,bin64_t::ALL));
+    tbh.push(tintbin(2,bin_t::ALL));
     ASSERT_EQ(1,tbh.pop().time);
-    ASSERT_EQ(bin64_t::ALL,tbh.peek().bin);
+    ASSERT_EQ(bin_t::ALL,tbh.peek().bin);
     ASSERT_EQ(2,tbh.pop().time);
     ASSERT_EQ(3,tbh.pop().time);
 }
@@ -42,7 +42,7 @@ TEST(TransferTest,TransferFile) {
     E000 = Sha1Hash(E0,Sha1Hash::ZERO);
     ABCDE000 = Sha1Hash(ABCD,E000);
     ROOT = ABCDE000;
-    for (bin64_t pos(3,0); pos!=bin64_t::ALL; pos=pos.parent()) {
+    for (bin_t pos(3,0); pos!=bin_t::ALL; pos=pos.parent()) {
         ROOT = Sha1Hash(ROOT,Sha1Hash::ZERO);
         //printf("m %lli %s\n",(uint64_t)pos.parent(),ROOT.hex().c_str());
     }
@@ -51,9 +51,9 @@ TEST(TransferTest,TransferFile) {
     
     FileTransfer* seed_transfer = new FileTransfer(BTF);
     HashTree* seed = & seed_transfer->file();
-    EXPECT_TRUE(A==seed->hash(bin64_t(0,0)));
-    EXPECT_TRUE(E==seed->hash(bin64_t(0,4)));
-    EXPECT_TRUE(ABCD==seed->hash(bin64_t(2,0)));
+    EXPECT_TRUE(A==seed->hash(bin_t(0,0)));
+    EXPECT_TRUE(E==seed->hash(bin_t(0,4)));
+    EXPECT_TRUE(ABCD==seed->hash(bin_t(2,0)));
     EXPECT_TRUE(ROOT==seed->root_hash());
     EXPECT_TRUE(ABCD==seed->peak_hash(0));
     EXPECT_TRUE(E==seed->peak_hash(1));
@@ -62,7 +62,7 @@ TEST(TransferTest,TransferFile) {
     EXPECT_EQ(5,seed->packet_size());
     EXPECT_EQ(4100,seed->complete());
     EXPECT_EQ(4100,seed->seq_complete());
-    EXPECT_EQ(bin64_t(2,0),seed->peak(0));
+    EXPECT_EQ(bin_t(2,0),seed->peak(0));
 
     // retrieve it
     unlink("copy");
@@ -75,13 +75,13 @@ TEST(TransferTest,TransferFile) {
     ASSERT_EQ(5<<10,leech->size());
     ASSERT_EQ(5,leech->packet_size());
     ASSERT_EQ(0,leech->complete());
-    EXPECT_EQ(bin64_t(2,0),leech->peak(0));
+    EXPECT_EQ(bin_t(2,0),leech->peak(0));
     // transfer data and hashes
     //           ABCD            E000
     //     AB         CD       E0    0
     //  AAAA BBBB  CCCC DDDD  E  0  0  0
     // calculated leech->OfferHash(bin64_t(1,0), seed->hashes[bin64_t(1,0)]);
-    leech->OfferHash(bin64_t(1,1), seed->hash(bin64_t(1,1)));
+    leech->OfferHash(bin_t(1,1), seed->hash(bin_t(1,1)));
     for (int i=0; i<5; i++) {
         if (i==2) { // now: stop, save, start
             delete leech_transfer;
@@ -89,14 +89,14 @@ TEST(TransferTest,TransferFile) {
             leech = & leech_transfer->file();
             leech_transfer->picker().Randomize(0);
             EXPECT_EQ(2,leech->packets_complete());
-            EXPECT_EQ(bin64_t(2,0),leech->peak(0));
+            EXPECT_EQ(bin_t(2,0),leech->peak(0));
         }
-        bin64_t next = leech_transfer->picker().Pick(seed->ack_out(),1,TINT_NEVER);
-        ASSERT_NE(bin64_t::NONE,next);
+        bin_t next = leech_transfer->picker().Pick(seed->ack_out(),1,TINT_NEVER);
+        ASSERT_NE(bin_t::NONE,next);
         ASSERT_TRUE(next.base_offset()<5);
         uint8_t buf[1024];         //size_t len = seed->storer->ReadData(next,&buf);
         size_t len = pread(seed->file_descriptor(),buf,1024,next.base_offset()<<10);
-        bin64_t sibling = next.sibling();
+        bin_t sibling = next.sibling();
         if (sibling.base_offset()<seed->packet_size())
             leech->OfferHash(sibling, seed->hash(sibling));
         uint8_t memo = *buf;

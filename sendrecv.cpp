@@ -23,7 +23,7 @@ struct event Channel::evrecv;
 
 void    Channel::AddPeakHashes (struct evbuffer *evb) {
     for(int i=0; i<file().peak_count(); i++) {
-        bin64_t peak = file().peak(i);
+        bin_t peak = file().peak(i);
         evbuffer_add_8(evb, SWIFT_HASH);
         evbuffer_add_32be(evb, (uint32_t)peak);
         evbuffer_add_hash(evb, file().peak_hash(i));
@@ -32,11 +32,11 @@ void    Channel::AddPeakHashes (struct evbuffer *evb) {
 }
 
 
-void    Channel::AddUncleHashes (struct evbuffer *evb, bin64_t pos) {
-    bin64_t peak = file().peak_for(pos);
+void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
+    bin_t peak = file().peak_for(pos);
     while (pos!=peak && ((NOW&3)==3 || !data_out_cap_.within(pos.parent())) &&
             ack_in_.get(pos.parent())==binmap_t::EMPTY  ) {
-        bin64_t uncle = pos.sibling();
+        bin_t uncle = pos.sibling();
         evbuffer_add_8(evb, SWIFT_HASH);
         evbuffer_add_32be(evb, (uint32_t)uncle);
         evbuffer_add_hash(evb,  file().hash(uncle) );
@@ -46,13 +46,13 @@ void    Channel::AddUncleHashes (struct evbuffer *evb, bin64_t pos) {
 }
 
 
-bin64_t           Channel::ImposeHint () {
+bin_t           Channel::ImposeHint () {
     uint64_t twist = peer_channel_id_;  // got no hints, send something randomly
     twist &= file().peak(0); // FIXME may make it semi-seq here
     file().ack_out().twist(twist);
     ack_in_.twist(twist);
-    bin64_t my_pick =
-        file().ack_out().find_filtered(ack_in_,bin64_t::ALL,binmap_t::FILLED);
+    bin_t my_pick =
+        file().ack_out().find_filtered(ack_in_,bin_t::ALL,binmap_t::FILLED);
     while (my_pick.width()>max(1,(int)cwnd_))
         my_pick = my_pick.left();
     file().ack_out().twist(0);
@@ -61,17 +61,17 @@ bin64_t           Channel::ImposeHint () {
 }
 
 
-bin64_t        Channel::DequeueHint () {
+bin_t        Channel::DequeueHint () {
     if (hint_in_.empty() && last_recv_time_>NOW-rtt_avg_-TINT_SEC) {
-        bin64_t my_pick = ImposeHint(); // FIXME move to the loop
-        if (my_pick!=bin64_t::NONE) {
+        bin_t my_pick = ImposeHint(); // FIXME move to the loop
+        if (my_pick!=bin_t::NONE) {
             hint_in_.push_back(my_pick);
             dprintf("%s #%u *hint %s\n",tintstr(),id_,my_pick.str());
         }
     }
-    bin64_t send = bin64_t::NONE;
-    while (!hint_in_.empty() && send==bin64_t::NONE) {
-        bin64_t hint = hint_in_.front().bin;
+    bin_t send = bin_t::NONE;
+    while (!hint_in_.empty() && send==bin_t::NONE) {
+        bin_t hint = hint_in_.front().bin;
         tint time = hint_in_.front().time;
         hint_in_.pop_front();
         while (!hint.is_base()) { // FIXME optimize; possible attack
@@ -94,7 +94,7 @@ bin64_t        Channel::DequeueHint () {
 void    Channel::AddHandshake (struct evbuffer *evb) {
     if (!peer_channel_id_) { // initiating
         evbuffer_add_8(evb, SWIFT_HASH);
-        evbuffer_add_32be(evb, bin64_t::ALL32);
+        evbuffer_add_32be(evb, bin_t::ALL32);
         evbuffer_add_hash(evb, file().root_hash());
         dprintf("%s #%u +hash ALL %s\n",
                 tintstr(),id_,file().root_hash().hex().c_str());
@@ -111,7 +111,7 @@ void    Channel::AddHandshake (struct evbuffer *evb) {
 void    Channel::Send () {
     struct evbuffer *evb = evbuffer_new();
     evbuffer_add_32be(evb, peer_channel_id_);
-    bin64_t data = bin64_t::NONE;
+    bin_t data = bin_t::NONE;
     if ( is_established() ) {
         // FIXME: seeder check
         AddHave(evb);
@@ -130,7 +130,7 @@ void    Channel::Send () {
             tintstr(),id_,(int)evbuffer_get_length(evb),peer().str(),
             peer_channel_id_);
     if (evbuffer_get_length(evb)==4) {// only the channel id; bare keep-alive
-        data = bin64_t::ALL;
+        data = bin_t::ALL;
     }
     if (Channel::SendTo(socket_,peer(),evb)==-1)
         print_error("can't send datagram");
@@ -157,9 +157,9 @@ void    Channel::AddHint (struct evbuffer *evb) {
     if ( hint_out_size_ < plan_pck ) {
 
         int diff = plan_pck - hint_out_size_; // TODO: aggregate
-        bin64_t hint = transfer().picker().Pick(ack_in_,diff,NOW+plan_for*2);
+        bin_t hint = transfer().picker().Pick(ack_in_,diff,NOW+plan_for*2);
 
-        if (hint!=bin64_t::NONE) {
+        if (hint!=bin_t::NONE) {
             evbuffer_add_8(evb, SWIFT_HINT);
             evbuffer_add_32be(evb, hint);
             dprintf("%s #%u +hint %s [%lli]\n",tintstr(),id_,hint.str(),hint_out_size_);
@@ -172,17 +172,17 @@ void    Channel::AddHint (struct evbuffer *evb) {
 }
 
 
-bin64_t        Channel::AddData (struct evbuffer *evb) {
+bin_t        Channel::AddData (struct evbuffer *evb) {
 
     if (!file().size()) // know nothing
-        return bin64_t::NONE;
+        return bin_t::NONE;
 
-    bin64_t tosend = bin64_t::NONE;
+    bin_t tosend = bin_t::NONE;
     tint luft = send_interval_>>4; // may wake up a bit earlier
     if (data_out_.size()<cwnd_ &&
             last_data_out_time_+send_interval_<=NOW+luft) {
         tosend = DequeueHint();
-        if (tosend==bin64_t::NONE) {
+        if (tosend==bin_t::NONE) {
             dprintf("%s #%u sendctrl no idea what to send\n",tintstr(),id_);
             if (send_control_!=KEEP_ALIVE_CONTROL)
                 SwitchSendControl(KEEP_ALIVE_CONTROL);
@@ -191,8 +191,8 @@ bin64_t        Channel::AddData (struct evbuffer *evb) {
         dprintf("%s #%u sendctrl wait cwnd %f data_out %i next %s\n",
                 tintstr(),id_,cwnd_,(int)data_out_.size(),tintstr(last_data_out_time_+NOW-send_interval_));
 
-    if (tosend==bin64_t::NONE)// && (last_data_out_time_>NOW-TINT_SEC || data_out_.empty()))
-        return bin64_t::NONE; // once in a while, empty data is sent just to check rtt FIXED
+    if (tosend==bin_t::NONE)// && (last_data_out_time_>NOW-TINT_SEC || data_out_.empty()))
+        return bin_t::NONE; // once in a while, empty data is sent just to check rtt FIXED
 
     if (ack_in_.is_empty() && file().size())
         AddPeakHashes(evb);
@@ -213,7 +213,7 @@ bin64_t        Channel::AddData (struct evbuffer *evb) {
     // TODO: corrupted data, retries, caching
     if (r<0) {
         print_error("error on reading");
-        return bin64_t::NONE;
+        return bin_t::NONE;
     }
     // assert(dgram.space()>=r+4+1);
     evbuffer_add(evb, buf, r);
@@ -244,15 +244,15 @@ void    Channel::AddAck (struct evbuffer *evb) {
 
 
 void    Channel::AddHave (struct evbuffer *evb) {
-    if (data_in_dbl_!=bin64_t::NONE) { // TODO: do redundancy better
+    if (data_in_dbl_!=bin_t::NONE) { // TODO: do redundancy better
         evbuffer_add_8(evb, SWIFT_HAVE);
         evbuffer_add_32be(evb, data_in_dbl_.to32());
-        data_in_dbl_=bin64_t::NONE;
+        data_in_dbl_=bin_t::NONE;
     }
     for(int count=0; count<4; count++) {
-        bin64_t ack = file().ack_out().find_filtered // FIXME: do rotating queue
-            (have_out_, bin64_t::ALL, binmap_t::FILLED);
-        if (ack==bin64_t::NONE)
+        bin_t ack = file().ack_out().find_filtered // FIXME: do rotating queue
+            (have_out_, bin_t::ALL, binmap_t::FILLED);
+        if (ack==bin_t::NONE)
             break;
         ack = file().ack_out().cover(ack);
         have_out_.set(ack);
@@ -272,7 +272,7 @@ void    Channel::Recv (struct evbuffer *evb) {
         dip_avg_ = rtt_avg_;
         dprintf("%s #%u sendctrl rtt init %lli\n",tintstr(),id_,rtt_avg_);
     }
-    bin64_t data = evbuffer_get_length(evb) ? bin64_t::NONE : bin64_t::ALL;
+    bin_t data = evbuffer_get_length(evb) ? bin_t::NONE : bin_t::ALL;
     while (evbuffer_get_length(evb)) {
         uint8_t type = evbuffer_remove_8(evb);
         switch (type) {
@@ -295,14 +295,14 @@ void    Channel::Recv (struct evbuffer *evb) {
 
 
 void    Channel::OnHash (struct evbuffer *evb) {
-    bin64_t pos = evbuffer_remove_32be(evb);
+    bin_t pos = evbuffer_remove_32be(evb);
     Sha1Hash hash = evbuffer_remove_hash(evb);
     file().OfferHash(pos,hash);
     dprintf("%s #%u -hash %s\n",tintstr(),id_,pos.str());
 }
 
 
-void    Channel::CleanHintOut (bin64_t pos) {
+void    Channel::CleanHintOut (bin_t pos) {
     int hi = 0;
     while (hi<hint_out_.size() && !pos.within(hint_out_[hi].bin))
         hi++;
@@ -323,28 +323,28 @@ void    Channel::CleanHintOut (bin64_t pos) {
 }
 
 
-bin64_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted data
-    bin64_t pos = evbuffer_remove_32be(evb);
+bin_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted data
+    bin_t pos = evbuffer_remove_32be(evb);
     if (file().ack_out().get(pos)) {
         data_in_ = tintbin(TINT_NEVER,transfer().ack_out().cover(pos));
-        return bin64_t::NONE;
+        return bin_t::NONE;
     }
     int length = (evbuffer_get_length(evb) < 1024) ?
         evbuffer_get_length(evb) : 1024;
     uint8_t *data = evbuffer_pullup(evb, length);
     evbuffer_drain(evb, length);
-    data_in_ = tintbin(NOW,bin64_t::NONE);
+    data_in_ = tintbin(NOW,bin_t::NONE);
     if (!file().OfferData(pos, (char*)data, length)) {
         dprintf("%s #%u !data %s\n",tintstr(),id_,pos.str());
-        return bin64_t::NONE;
+        return bin_t::NONE;
     }
     dprintf("%s #%u -data %s\n",tintstr(),id_,pos.str());
-    bin64_t cover = transfer().ack_out().cover(pos);
+    bin_t cover = transfer().ack_out().cover(pos);
     for(int i=0; i<transfer().cb_installed; i++)
         if (cover.layer()>=transfer().cb_agg[i])
             transfer().callbacks[i](transfer().fd(),cover);  // FIXME
     data_in_.bin = pos;
-    if (pos!=bin64_t::NONE) {
+    if (pos!=bin_t::NONE) {
         if (last_data_in_time_) {
             tint dip = NOW - last_data_in_time_;
             dip_avg_ = ( dip_avg_*3 + dip ) >> 2;
@@ -357,10 +357,10 @@ bin64_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupt
 
 
 void    Channel::OnAck (struct evbuffer *evb) {
-    bin64_t ackd_pos = evbuffer_remove_32be(evb);
+    bin_t ackd_pos = evbuffer_remove_32be(evb);
     tint peer_time = evbuffer_remove_64be(evb); // FIXME 32
     // FIXME FIXME: wrap around here
-    if (ackd_pos==bin64_t::NONE)
+    if (ackd_pos==bin_t::NONE)
         return; // likely, brocken packet / insufficient hashes
     if (file().size() && ackd_pos.base_offset()>=file().packet_size()) {
         eprintf("invalid ack: %s\n",ackd_pos.str());
@@ -405,7 +405,7 @@ void    Channel::OnAck (struct evbuffer *evb) {
             ack_not_rcvd_recent_++;
             data_out_tmo_.push_back(data_out_[re].bin);
             dprintf("%s #%u Rdata %s\n",tintstr(),id_,data_out_.front().bin.str());
-            data_out_cap_ = bin64_t::ALL;
+            data_out_cap_ = bin_t::ALL;
             data_out_[re] = tintbin();
         }
     }
@@ -426,7 +426,7 @@ void Channel::TimeoutDataOut ( ) {
         ( data_out_.front().time<timeout || data_out_.front()==tintbin() ) ) {
         if (data_out_.front()!=tintbin() && ack_in_.is_empty(data_out_.front().bin)) {
             ack_not_rcvd_recent_++;
-            data_out_cap_ = bin64_t::ALL;
+            data_out_cap_ = bin_t::ALL;
             data_out_tmo_.push_back(data_out_.front().bin);
             dprintf("%s #%u Tdata %s\n",tintstr(),id_,data_out_.front().bin.str());
         }
@@ -439,8 +439,8 @@ void Channel::TimeoutDataOut ( ) {
 
 
 void Channel::OnHave (struct evbuffer *evb) {
-    bin64_t ackd_pos = evbuffer_remove_32be(evb);
-    if (ackd_pos==bin64_t::NONE)
+    bin_t ackd_pos = evbuffer_remove_32be(evb);
+    if (ackd_pos==bin_t::NONE)
         return; // wow, peer has hashes
     ack_in_.set(ackd_pos);
     dprintf("%s #%u -have %s\n",tintstr(),id_,ackd_pos.str());
@@ -448,7 +448,7 @@ void Channel::OnHave (struct evbuffer *evb) {
 
 
 void    Channel::OnHint (struct evbuffer *evb) {
-    bin64_t hint = evbuffer_remove_32be(evb);
+    bin_t hint = evbuffer_remove_32be(evb);
     // FIXME: wake up here
     hint_in_.push_back(hint);
     dprintf("%s #%u -hint %s\n",tintstr(),id_,hint.str());
@@ -510,8 +510,8 @@ void    Channel::RecvDatagram (SOCKET socket) {
         if (hashid!=SWIFT_HASH)
             return_log ("%s #0 no hash in the initial handshake %s\n",
                         tintstr(),addr.str());
-        bin64_t pos = evbuffer_remove_32be(evb);
-        if (pos!=bin64_t::ALL)
+        bin_t pos = evbuffer_remove_32be(evb);
+        if (pos!=bin_t::ALL)
             return_log ("%s #0 that is not the root hash %s\n",tintstr(),addr.str());
         hash = evbuffer_remove_hash(evb);
         FileTransfer* file = FileTransfer::Find(hash);
