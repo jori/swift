@@ -41,10 +41,10 @@ TEST(BinTest,Traversing) {
 	EXPECT_EQ(bin(30).right(),29);
 	EXPECT_EQ(bin(14).right(),13);
 	EXPECT_EQ(bin(22).right(),21);
-	EXPECT_EQ(bin(15).left_foot(),1)<<"15 left foot";
-	EXPECT_EQ(bin(15).right_foot(),12)<<"15 right foot";
-	EXPECT_EQ(bin(22).left_foot(),16)<<"22 left foot";
-	EXPECT_EQ(bin(22).right_foot(),20)<<"22 right foot";
+	EXPECT_EQ(bin(15).base_left(),1)<<"15 left foot";
+	EXPECT_EQ(bin(15).base_right(),12)<<"15 right foot";
+	EXPECT_EQ(bin(22).base_left(),16)<<"22 left foot";
+	EXPECT_EQ(bin(22).base_right(),20)<<"22 right foot";
 }
 
 TEST(BinTest,Advanced) {

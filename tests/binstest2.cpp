@@ -120,7 +120,7 @@ TEST(BinsTest,Find){
     hole.set(bin_t(4,0),binmap_t::FILLED);
     hole.set(bin_t(1,1),binmap_t::EMPTY);
     hole.set(bin_t(0,7),binmap_t::EMPTY);
-    bin_t f = hole.find(bin_t(4,0)).left_foot();
+    bin_t f = hole.find(bin_t(4,0)).base_left();
     EXPECT_EQ(bin_t(0,2),f);
     
 }
@@ -222,7 +222,7 @@ TEST(BinsTest,FindFiltered) {
     filter.set(bin_t(1,4));
     filter.set(bin_t(0,13));
     
-    bin_t x = data.find_filtered(filter,bin_t(4,0)).left_foot();
+    bin_t x = data.find_filtered(filter,bin_t(4,0)).base_left();
     EXPECT_EQ(bin_t(0,12),x);
     
 }
@@ -250,9 +250,9 @@ TEST(BinsTest,FindFiltered2) {
     for(int j=1; j<1024; j+=2)
         filter.set(bin_t(0,j));
     filter.set(bin_t(0,501),binmap_t::EMPTY);
-    EXPECT_EQ(bin_t(0,501),data.find_filtered(filter,bin_t(10,0)).left_foot());
+    EXPECT_EQ(bin_t(0,501),data.find_filtered(filter,bin_t(10,0)).base_left());
     data.set(bin_t(0,501));
-    EXPECT_EQ(bin_t::NONE,data.find_filtered(filter,bin_t(10,0)).left_foot());
+    EXPECT_EQ(bin_t::NONE,data.find_filtered(filter,bin_t(10,0)).base_left());
     
 }
     

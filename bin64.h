@@ -141,7 +141,7 @@ struct bin_t {
     inline bool is_right() const { return !is_left(); }
 
     /** Get the leftmost basic bin within this bin. */
-    bin_t   left_foot () const {
+    bin_t   base_left () const {
         if (v==NONE)
             return NONE;
         return bin_t(0,base_offset());
