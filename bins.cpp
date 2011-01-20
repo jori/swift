@@ -512,7 +512,7 @@ binheap::binheap() {
 bool bincomp (const bin_t& a, const bin_t& b) {
     register uint64_t ab = a.base_offset(), bb = b.base_offset();
     if (ab==bb)
-        return a.tail_bit() < b.tail_bit();
+        return a.layer_bits() < b.layer_bits();
     else
         return ab > bb;
 }
@@ -520,7 +520,7 @@ bool bincomp (const bin_t& a, const bin_t& b) {
 bool bincomp_rev (const bin_t& a, const bin_t& b) {
     register uint64_t ab = a.base_offset(), bb = b.base_offset();
     if (ab==bb)
-        return a.tail_bit() > b.tail_bit();
+        return a.layer_bits() > b.layer_bits();
     else
         return ab < bb;
 }

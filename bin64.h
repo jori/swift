@@ -44,12 +44,8 @@ struct bin_t {
     static bin_t none () { return NONE; }
     static bin_t all () { return ALL; }
 
-    uint64_t tail_bits () const {
+    uint64_t layer_bits () const {
         return v ^ (v+1);
-    }
-
-    uint64_t tail_bit () const {
-        return (tail_bits()+1)>>1;
     }
 
     /** Get the sibling interval in the binary tree. */
@@ -77,7 +73,7 @@ struct bin_t {
 
     /** Get the bin's offset in base units, i.e. 4 for (1,2). */
     uint64_t base_offset () const {
-        return (v&~(tail_bits()))>>1;
+        return (v&~(layer_bits()))>>1;
     }
 
     /** Get the bin's offset at its own layer, e.g. 2 for (1,2). */
@@ -89,7 +85,7 @@ struct bin_t {
     bin_t   to (bool right) const {
         if (!(v&1))
             return NONE;
-        uint64_t tb = ((tail_bits() >> 1) + 1) >> 1;
+        uint64_t tb = ((layer_bits() >> 1) + 1) >> 1;
         if (right)
             return bin_t(v + tb);
         return bin_t(v ^ tb);
@@ -126,12 +122,12 @@ struct bin_t {
 
     /** Twist/untwist a bin number according to the mask. */
     bin_t   twisted (uint64_t mask) const {
-        return bin_t( v ^ ((mask<<1)&~tail_bits()) );
+        return bin_t( v ^ ((mask<<1)&~layer_bits()) );
     }
 
     /** Get the paretn bin. */
     bin_t   parent () const {
-        uint64_t tbs = tail_bits(), ntbs = (tbs+1)|tbs;
+        uint64_t tbs = layer_bits(), ntbs = (tbs+1)|tbs;
         return bin_t( (v&~ntbs) | tbs );
     }
 
@@ -158,7 +154,7 @@ struct bin_t {
 
     /** Return the number of basic bins within this bin. */
     uint64_t base_length () const {
-        return (tail_bits()+1)>>1;
+        return (layer_bits()+1)>>1;
     }
     
     /** Get the standard-form null-terminated string
@@ -172,6 +168,10 @@ struct bin_t {
      to assume there will be less in any given case. */
     static int peaks (uint64_t length, bin_t* peaks) ;
 
+private:
+    uint64_t tail_bit () const {
+        return (layer_bits()+1)>>1;
+    }
 };
 
 
