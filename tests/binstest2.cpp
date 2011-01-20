@@ -298,7 +298,7 @@ TEST(BinsTest,Twist) {
     EXPECT_EQ(binmap_t::FILLED,b.get(bin_t(3,3)));
     EXPECT_EQ(binmap_t::EMPTY,b.get(bin_t(3,2)));
     bin_t tw = b.find(bin_t(5,0),binmap_t::FILLED);
-    while (tw.width()>(1<<3))
+    while (tw.base_length()>(1<<3))
         tw = tw.left();
     tw = tw.twisted(1<<3);
     EXPECT_EQ(bin_t(3,2),tw);

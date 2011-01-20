@@ -157,7 +157,7 @@ struct bin_t {
     }
 
     /** Return the number of basic bins within this bin. */
-    bin_t   width () const {
+    uint64_t base_length () const {
         return (tail_bits()+1)>>1;
     }
     

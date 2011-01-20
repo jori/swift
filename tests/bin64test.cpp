@@ -39,7 +39,7 @@ TEST(Bin64Test,Overflows) {
 
     EXPECT_FALSE(bin_t(bin_t::NONE).contains(bin_t(0,1)));
     EXPECT_TRUE(bin_t(bin_t::ALL).contains(bin_t(0,1)));
-    EXPECT_EQ(0,bin_t::none().width());
+    EXPECT_EQ(0,bin_t::none().base_length());
     EXPECT_EQ(bin_t::none(),bin_t::none().twisted(123));
     /*EXPECT_EQ(bin64_t::NONE.parent(),bin64_t::NONE);
     EXPECT_EQ(bin64_t::NONE.left(),bin64_t::NONE);
@@ -51,7 +51,7 @@ TEST(Bin64Test,Overflows) {
 
 TEST(Bin64Test, Advanced) {
 
-    EXPECT_EQ(4,bin_t(2,3).width());
+    EXPECT_EQ(4,bin_t(2,3).base_length());
     EXPECT_FALSE(bin_t(1,1234).is_base());
     EXPECT_TRUE(bin_t(0,12345).is_base());
     EXPECT_EQ(bin_t(0,2),bin_t(1,1).left_foot());

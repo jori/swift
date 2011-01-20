@@ -73,7 +73,7 @@ public:
             ack_hint_out_.range_copy(file().ack_out(), hint);
             goto retry;
         }
-        while (hint.width()>max_width)
+        while (hint.base_length()>max_width)
             hint = hint.left();
         assert(ack_hint_out_.get(hint)==binmap_t::EMPTY);
         ack_hint_out_.set(hint);

@@ -301,7 +301,7 @@ uint64_t binmap_t::mass () {
         i.left();
     while (!i.end()) {
         if (*i==binmap_t::FILLED)
-            ret += i.pos.width();
+            ret += i.pos.base_length();
         i.next_solid();
     }
     return ret;
@@ -451,7 +451,7 @@ void        binmap_t::range_op (binmap_t& mask, bin_t range, bin_op_t op) {
 uint64_t    binmap_t::seq_length () {
     iterator i(this,bin_t(height,0));
     if (!i.deep() && *i==FILLED)
-        return i.pos.width();
+        return i.pos.base_length();
     while (!i.pos.is_base()) {
         if (i.deep() || *i!=FILLED) 
             i.left();

@@ -200,7 +200,7 @@ bool            HashTree::OfferPeakHash (bin_t pos, const Sha1Hash& hash) {
     if (peak_count_) {
         bin_t last_peak = peaks_[peak_count_-1];
         if ( pos.layer()>=last_peak.layer() ||
-            pos.base_offset()!=last_peak.base_offset()+last_peak.width() )
+            pos.base_offset()!=last_peak.base_offset()+last_peak.base_length() )
             peak_count_ = 0;
     }
     peaks_[peak_count_] = pos;
@@ -211,7 +211,7 @@ bool            HashTree::OfferPeakHash (bin_t pos, const Sha1Hash& hash) {
     if (mustbe_root!=root_hash_)
         return false;
     for(int i=0; i<peak_count_; i++)
-        sizek_ += peaks_[i].width();
+        sizek_ += peaks_[i].base_length();
 
     // bingo, we now know the file size (rounded up to a KByte)
 

@@ -53,7 +53,7 @@ bin_t           Channel::ImposeHint () {
     ack_in_.twist(twist);
     bin_t my_pick =
         file().ack_out().find_filtered(ack_in_,bin_t::ALL,binmap_t::FILLED);
-    while (my_pick.width()>max(1,(int)cwnd_))
+    while (my_pick.base_length()>max(1,(int)cwnd_))
         my_pick = my_pick.left();
     file().ack_out().twist(0);
     ack_in_.twist(0);
@@ -85,7 +85,7 @@ bin_t        Channel::DequeueHint () {
     }
     uint64_t mass = 0;
     for(int i=0; i<hint_in_.size(); i++)
-        mass += hint_in_[i].bin.width();
+        mass += hint_in_[i].bin.base_length();
     dprintf("%s #%u dequeued %s [%lli]\n",tintstr(),id_,send.str(),mass);
     return send;
 }
@@ -148,7 +148,7 @@ void    Channel::AddHint (struct evbuffer *evb) {
 
     tint timed_out = NOW - plan_for*2;
     while ( !hint_out_.empty() && hint_out_.front().time < timed_out ) {
-        hint_out_size_ -= hint_out_.front().bin.width();
+        hint_out_size_ -= hint_out_.front().bin.base_length();
         hint_out_.pop_front();
     }
 
@@ -164,7 +164,7 @@ void    Channel::AddHint (struct evbuffer *evb) {
             evbuffer_add_32be(evb, hint);
             dprintf("%s #%u +hint %s [%lli]\n",tintstr(),id_,hint.str(),hint_out_size_);
             hint_out_.push_back(hint);
-            hint_out_size_ += hint.width();
+            hint_out_size_ += hint.base_length();
         } else
             dprintf("%s #%u Xhint\n",tintstr(),id_);
 
@@ -309,7 +309,7 @@ void    Channel::CleanHintOut (bin_t pos) {
     if (hi==hint_out_.size())
         return; // something not hinted or hinted in far past
     while (hi--) { // removing likely snubbed hints
-        hint_out_size_ -= hint_out_.front().bin.width();
+        hint_out_size_ -= hint_out_.front().bin.base_length();
         hint_out_.pop_front();
     }
     while (hint_out_.front().bin!=pos) {
