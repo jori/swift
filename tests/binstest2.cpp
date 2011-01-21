@@ -9,9 +9,11 @@
 #include <time.h>
 #include <set>
 #include <gtest/gtest.h>
-#include "bins.h"
+#include "binmap.h"
+#include "binheap.h"
 
 
+/*
 TEST(BinsTest,Routines) {
 
     uint32_t cell = (3<<10) | (3<<14) | (3<<0);
@@ -25,6 +27,8 @@ TEST(BinsTest,Routines) {
     EXPECT_EQ(binmap_t::NOJOIN,binmap_t::join32to16(cell|4));
 
 }
+*/
+
 
 TEST(BinsTest,SetGet) {
 
@@ -48,6 +52,7 @@ TEST(BinsTest,SetGet) {
 
 }
 
+/*
 TEST(BinsTest,Iterator) {
     binmap_t b;
     b.set(bin_t(3,1));
@@ -66,6 +71,7 @@ TEST(BinsTest,Iterator) {
     i.next();
     EXPECT_TRUE(i.end());
 }
+*/
 
 TEST(BinsTest,Chess) {
     binmap_t chess16;
@@ -129,11 +135,12 @@ TEST(BinsTest,Find){
     hole.set(bin_t(4,0));
     hole.reset(bin_t(1,1));
     hole.reset(bin_t(0,7));
-    bin_t f = hole.find(bin_t(4,0)).base_left();
+    bin_t f = hole.find_empty().base_left();
     EXPECT_EQ(bin_t(0,2),f);
     
 }
 
+/*
 TEST(BinsTest,Stripes) {
     
     binmap_t zebra;
@@ -156,7 +163,8 @@ TEST(BinsTest,Stripes) {
     free(stripes);
 
 }
-
+*/
+/*
 TEST(BinsTest,StripesAgg) {
     
     binmap_t zebra;
@@ -171,6 +179,7 @@ TEST(BinsTest,StripesAgg) {
     free(stripes);
     
 }    
+*/
 
 TEST(BinsTest,Alloc) {
 
@@ -179,10 +188,11 @@ TEST(BinsTest,Alloc) {
     b.set(bin_t(1,1));
     b.reset(bin_t(1,0));
     b.reset(bin_t(1,1));
-    EXPECT_EQ(1,b.size());
+    EXPECT_EQ(1,b.cells_number());
 
 }
 
+/*
 TEST(BinsTest,Remove) {
     
     binmap_t b;
@@ -220,6 +230,7 @@ TEST(BinsTest,Remove) {
     EXPECT_TRUE(b16.is_filled(bin_t(2,2)));
     
 }
+*/
 
 TEST(BinsTest,FindFiltered) {
     
@@ -227,11 +238,12 @@ TEST(BinsTest,FindFiltered) {
     data.set(bin_t(2,0));
     data.set(bin_t(2,2));
     data.set(bin_t(1,7));
-    filter.set(bin_t(2,1));
-    filter.set(bin_t(1,4));
-    filter.set(bin_t(0,13));
+    filter.set(bin_t(4,0));
+    filter.reset(bin_t(2,1));
+    filter.reset(bin_t(1,4));
+    filter.reset(bin_t(0,13));
     
-    bin_t x = data.find_filtered(filter,bin_t(4,0)).base_left();
+    bin_t x = binmap_t::find_complement(data, filter, bin_t(4,0), 0);
     EXPECT_EQ(bin_t(0,12),x);
     
 }
@@ -256,12 +268,12 @@ TEST(BinsTest,FindFiltered2) {
     binmap_t data, filter;
     for(int i=0; i<1024; i+=2)
         data.set(bin_t(0,i));
-    for(int j=1; j<1024; j+=2)
+    for(int j=0; j<1024; j+=2)
         filter.set(bin_t(0,j));
-    filter.reset(bin_t(0,501));
-    EXPECT_EQ(bin_t(0,501),data.find_filtered(filter,bin_t(10,0)).base_left());
-    data.set(bin_t(0,501));
-    EXPECT_EQ(bin_t::NONE,data.find_filtered(filter,bin_t(10,0)).base_left());
+    data.reset(bin_t(0,500));
+    EXPECT_EQ(bin_t(0,500),binmap_t::find_complement(data, filter, bin_t(10,0), 0).base_left());
+    data.set(bin_t(0,500));
+    EXPECT_EQ(bin_t::NONE,binmap_t::find_complement(data, filter, bin_t(10,0), 0).base_left());
     
 }
     
@@ -274,7 +286,7 @@ TEST(BinsTest,CopyRange) {
     add.set(bin_t(1,4));
     add.set(bin_t(0,13));
     add.set(bin_t(5,118));
-    data.range_copy(add, bin_t(3,0));
+    binmap_t::copy(data, add, bin_t(3,0));
     EXPECT_FALSE(data.is_empty(bin_t(3,0)));
     EXPECT_FALSE(data.is_filled(bin_t(3,0)));
     EXPECT_TRUE(data.is_empty(bin_t(2,0)));
@@ -283,6 +295,7 @@ TEST(BinsTest,CopyRange) {
     EXPECT_TRUE(data.is_filled(bin_t(1,7)));
 }
 
+/*
 TEST(BinsTest, Mass) {
     binmap_t b;
     b.set(bin_t(6,0));
@@ -298,7 +311,9 @@ TEST(BinsTest, Mass) {
         b50.set(bin_t(4,i*2));
     EXPECT_EQ(50<<4,b50.mass());
 }
+*/
 
+/*
 TEST(BinsTest,Twist) {
     binmap_t b;
     b.set(bin_t(3,2));
@@ -316,6 +331,7 @@ TEST(BinsTest,Twist) {
     EXPECT_TRUE(b.is_filled(bin_t(3,2)));
     EXPECT_TRUE(b.is_empty(bin_t(3,3)));
 }
+*/
 
 TEST(BinsTest,SeqLength) {
     binmap_t b;
@@ -323,7 +339,7 @@ TEST(BinsTest,SeqLength) {
     b.set(bin_t(1,4));
     b.set(bin_t(0,10));
     b.set(bin_t(3,2));
-    EXPECT_EQ(11,b.seq_length());
+    EXPECT_EQ(11,b.find_empty().base_offset());
 }
 
 TEST(BinsTest,EmptyFilled) {
@@ -378,10 +394,9 @@ TEST(BinheapTest,Eat) {
     EXPECT_EQ(bin_t(5,0),b.pop());
     for (int i=32; i<64; i++)
         EXPECT_EQ(bin_t(0,i),b.pop());
-        
 }
 
-TEST(BinsTest,RangeOpTest) {
+/*TEST(BinsTest,RangeOpTest) {
     binmap_t a, b;
     a.set(bin_t(0,0));
     a.set(bin_t(0,2));
@@ -407,7 +422,9 @@ TEST(BinsTest,RangeOpTest) {
     x.set(bin_t(0,1));
     x.set(bin_t(0,1));
 }
+*/
 
+/*
 TEST(BinsTest,CoarseBitmap) {
     binmap_t b;
     b.set(bin_t(4,0));
@@ -466,6 +483,7 @@ TEST(BinsTest,CoarseBitmap) {
     EXPECT_EQ( 0xffffffffffffffffULL, bigint );
     
 }
+*/
 
 /*TEST(BinsTest,AddSub) {
 	binmap_t b;

@@ -9,7 +9,7 @@
 #ifndef SWIFT_SHA1_HASH_TREE_H
 #define SWIFT_SHA1_HASH_TREE_H
 #include "bin.h"
-#include "bins.h"
+#include "binmap.h"
 #include <string.h>
 #include <string>
 

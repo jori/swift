@@ -11,8 +11,9 @@
 #include "bin_utils.h"
 //#include <openssl/sha.h>
 #include "sha1.h"
-#include <string.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
 #include <fcntl.h>
 #include "compat.h"
 
@@ -341,7 +342,7 @@ bool            HashTree::OfferData (bin_t pos, const char* data, size_t length)
 
 
 uint64_t      HashTree::seq_complete () {
-    uint64_t seqk = ack_out_.seq_length();
+    uint64_t seqk = ack_out_.find_empty().base_offset();
     if (seqk==sizek_)
         return size_;
     else

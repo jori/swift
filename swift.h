@@ -57,7 +57,7 @@
 #include <event2/event_struct.h>
 #include <event2/buffer.h>
 #include "bin.h"
-#include "bins.h"
+#include "binmap.h"
 #include "hashtree.h"
 #include "compat.h"
 

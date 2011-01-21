@@ -9,6 +9,7 @@
 #include "bin_utils.h"
 #include "swift.h"
 #include <algorithm>  // kill it
+#include <cassert>
 
 using namespace swift;
 using namespace std;
@@ -51,15 +52,15 @@ void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
 
 bin_t           Channel::ImposeHint () {
     uint64_t twist = peer_channel_id_;  // got no hints, send something randomly
+
     twist &= file().peak(0).toUInt(); // FIXME may make it semi-seq here
-    file().ack_out().twist(twist);
-    ack_in_.twist(twist);
-    bin_t my_pick =
-        file().ack_out().find_filtered(ack_in_,bin_t::ALL,binmap_t::FILLED);
+
+    bin_t my_pick = binmap_t::find_complement(ack_in_, file().ack_out(), twist);
+
+    my_pick.to_twisted(twist);
     while (my_pick.base_length()>max(1,(int)cwnd_))
         my_pick = my_pick.left();
-    file().ack_out().twist(0);
-    ack_in_.twist(0);
+
     return my_pick.twisted(twist);
 }
 
@@ -259,8 +260,7 @@ void    Channel::AddHave (struct evbuffer *evb) {
         data_in_dbl_=bin_t::NONE;
     }
     for(int count=0; count<4; count++) {
-        bin_t ack = file().ack_out().find_filtered // FIXME: do rotating queue
-            (have_out_, bin_t::ALL, binmap_t::FILLED);
+        bin_t ack = binmap_t::find_complement(have_out_, file().ack_out(), 0); // FIXME: do rotating queue
         if (ack.is_none())
             break;
         ack = file().ack_out().cover(ack);

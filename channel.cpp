@@ -7,7 +7,8 @@
  *
  */
 
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 #include <fcntl.h>
 #ifndef _WIN32
 #include <sys/select.h>

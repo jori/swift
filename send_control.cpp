@@ -8,6 +8,7 @@
  */
 
 #include "swift.h"
+#include <cassert>
 
 using namespace swift;
 using namespace std;

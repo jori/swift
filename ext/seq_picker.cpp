@@ -8,6 +8,7 @@
  */
 
 #include "swift.h"
+#include <cassert>
 
 using namespace swift;
 
@@ -26,7 +27,7 @@ public:
     
     SeqPiecePicker (FileTransfer* file_to_pick_from) : range_(bin_t::ALL),
     transfer_(file_to_pick_from), ack_hint_out_(), twist_(0) {
-        ack_hint_out_.range_copy(file().ack_out(),bin_t::ALL);
+        binmap_t::copy(ack_hint_out_, file().ack_out());
     }
     virtual ~SeqPiecePicker() {}
     
@@ -44,7 +45,7 @@ public:
     
     virtual bin_t Pick (binmap_t& offer, uint64_t max_width, tint expires) {
         while (hint_out_.size() && hint_out_.front().time<NOW-TINT_SEC*3/2) { // FIXME sec
-            ack_hint_out_.range_copy(file().ack_out(), hint_out_.front().bin);
+            binmap_t::copy(ack_hint_out_, file().ack_out(), hint_out_.front().bin);
             hint_out_.pop_front();
         }
         if (!file().size()) {
@@ -52,25 +53,14 @@ public:
         }
     retry:      // bite me
         twist_ &= (file().peak(0).toUInt()) & ((1<<6)-1);
-        if (twist_) {
-            offer.twist(twist_);
-            ack_hint_out_.twist(twist_);
-        }
-        bin_t range_tw = bin_t::ALL;
-        if (!range_.is_all())
-            range_tw = range_.twisted(twist_);
-        bin_t hint = offer.find_filtered
-            (ack_hint_out_,range_tw,binmap_t::FILLED);
-        if (twist_) {
-            hint = hint.twisted(twist_);
-            offer.twist(0);
-            ack_hint_out_.twist(0);
-        }
+
+        bin_t hint = binmap_t::find_complement(ack_hint_out_, offer, twist_);
         if (hint.is_none()) {
             return hint; // TODO: end-game mode
         }
+
         if (!file().ack_out().is_empty(hint)) { // unhinted/late data
-            ack_hint_out_.range_copy(file().ack_out(), hint);
+            binmap_t::copy(ack_hint_out_, file().ack_out(), hint);
             goto retry;
         }
         while (hint.base_length()>max_width)

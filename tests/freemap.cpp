@@ -9,20 +9,13 @@
 #include <time.h>
 #include <gtest/gtest.h>
 #include <set>
-#include "bins.h"
+#include "binmap.h"
 
 #ifdef _MSC_VER
 	#define RANDOM  rand
 #else
 	#define RANDOM	random
 #endif
-
-int bins_stripe_count (binmap_t& b) {
-    int stripe_count;
-    uint64_t * stripes = b.get_stripes(stripe_count);
-    free(stripes);
-    return stripe_count;
-}
 
 uint8_t rand_norm (uint8_t lim) {
     long rnd = RANDOM() & ((1<<lim)-1);
@@ -44,7 +37,7 @@ TEST(FreemapTest,Freemap) {
     for (int t=0; t<1000000; t++) {
         if (t<500000 || t>504000) {
             uint8_t lr = rand_norm(28);
-            bin_t alloc = space.find(top);
+            bin_t alloc = space.find_empty();
             while (alloc.layer()>lr)
                 alloc = alloc.left();
             ASSERT_NE(0ULL,~alloc.toUInt());
@@ -65,10 +58,10 @@ TEST(FreemapTest,Freemap) {
                 freebin.toUInt());
        }
         // log: space taken, gaps, binmap cells, tree cells
-        int cells = space.size();
-        int intervals = bins_stripe_count(space);
-        printf("time %i cells used %i intervals %i blocks %i\n",
-                t,cells,intervals,(int)to_free.size());
+        int cells = space.cells_number();
+
+        printf("time %i cells used %i blocks %i\n",
+                t,cells,(int)to_free.size());
         //space.dump("space");
     }
     for(ts_t::iterator i=to_free.begin(); i!=to_free.end(); i++)
