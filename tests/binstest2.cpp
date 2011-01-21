@@ -69,9 +69,14 @@ TEST(BinsTest,Iterator) {
 
 TEST(BinsTest,Chess) {
     binmap_t chess16;
-    for(int i=0; i<15; i++)
-        chess16.set(bin_t(0,i), (i&1)?binmap_t::FILLED:binmap_t::EMPTY);
-    chess16.set(bin_t(0,15), binmap_t::FILLED);
+    for(int i=0; i<16; i++) {
+        if (i&1) {
+            chess16.set(bin_t(0,i));
+        } else {
+            chess16.reset(bin_t(0,i));
+        }
+    }
+
     for(int i=0; i<16; i++) {
         if (i&1) {
             EXPECT_TRUE(chess16.is_filled(bin_t(0,i)));
@@ -81,11 +86,11 @@ TEST(BinsTest,Chess) {
     }
     EXPECT_FALSE(chess16.is_empty(bin_t(4,0)));
     for(int i=0; i<16; i+=2)
-        chess16.set(bin_t(0,i), binmap_t::FILLED);
+        chess16.set(bin_t(0,i));
     EXPECT_TRUE(chess16.is_filled(bin_t(4,0)));
     EXPECT_TRUE(chess16.is_filled(bin_t(2,3)));
 
-    chess16.set(bin_t(4,1),binmap_t::FILLED);
+    chess16.set(bin_t(4,1));
     EXPECT_TRUE(chess16.is_filled(bin_t(5,0)));
 }
 
@@ -94,12 +99,12 @@ TEST(BinsTest,Staircase) {
     const int TOPLAYR = 44;
     binmap_t staircase;
     for(int i=0;i<TOPLAYR;i++)
-        staircase.set(bin_t(i,1),binmap_t::FILLED);
+        staircase.set(bin_t(i,1));
     
     EXPECT_FALSE(staircase.is_filled(bin_t(TOPLAYR,0)));
     EXPECT_FALSE(staircase.is_empty(bin_t(TOPLAYR,0)));
 
-    staircase.set(bin_t(0,0),binmap_t::FILLED);
+    staircase.set(bin_t(0,0));
     EXPECT_TRUE(staircase.is_filled(bin_t(TOPLAYR,0)));
 
 }
@@ -107,9 +112,9 @@ TEST(BinsTest,Staircase) {
 TEST(BinsTest,Hole) {
     
     binmap_t hole;
-    hole.set(bin_t(8,0),binmap_t::FILLED);
-    hole.set(bin_t(6,1),binmap_t::EMPTY);
-    hole.set(bin_t(6,2),binmap_t::EMPTY);
+    hole.set(bin_t(8,0));
+    hole.reset(bin_t(6,1));
+    hole.reset(bin_t(6,2));
     EXPECT_TRUE(hole.is_filled(bin_t(6,0)));
     EXPECT_TRUE(hole.is_filled(bin_t(6,3)));
     EXPECT_FALSE(hole.is_filled(bin_t(8,0)));
@@ -121,9 +126,9 @@ TEST(BinsTest,Hole) {
 TEST(BinsTest,Find){
     
     binmap_t hole;
-    hole.set(bin_t(4,0),binmap_t::FILLED);
-    hole.set(bin_t(1,1),binmap_t::EMPTY);
-    hole.set(bin_t(0,7),binmap_t::EMPTY);
+    hole.set(bin_t(4,0));
+    hole.reset(bin_t(1,1));
+    hole.reset(bin_t(0,7));
     bin_t f = hole.find(bin_t(4,0)).base_left();
     EXPECT_EQ(bin_t(0,2),f);
     
@@ -133,9 +138,9 @@ TEST(BinsTest,Stripes) {
     
     binmap_t zebra;
     zebra.set(bin_t(5,0));
-    zebra.set(bin_t(3,1),binmap_t::EMPTY);
-    zebra.set(bin_t(1,12),binmap_t::EMPTY);
-    zebra.set(bin_t(1,14),binmap_t::EMPTY);
+    zebra.reset(bin_t(3,1));
+    zebra.reset(bin_t(1,12));
+    zebra.reset(bin_t(1,14));
     int count;
     uint64_t *stripes = zebra.get_stripes(count);
     EXPECT_EQ(9,count);
@@ -172,8 +177,8 @@ TEST(BinsTest,Alloc) {
     binmap_t b;
     b.set(bin_t(1,0));
     b.set(bin_t(1,1));
-    b.set(bin_t(1,0),binmap_t::EMPTY);
-    b.set(bin_t(1,1),binmap_t::EMPTY);
+    b.reset(bin_t(1,0));
+    b.reset(bin_t(1,1));
     EXPECT_EQ(1,b.size());
 
 }
@@ -253,7 +258,7 @@ TEST(BinsTest,FindFiltered2) {
         data.set(bin_t(0,i));
     for(int j=1; j<1024; j+=2)
         filter.set(bin_t(0,j));
-    filter.set(bin_t(0,501),binmap_t::EMPTY);
+    filter.reset(bin_t(0,501));
     EXPECT_EQ(bin_t(0,501),data.find_filtered(filter,bin_t(10,0)).base_left());
     data.set(bin_t(0,501));
     EXPECT_EQ(bin_t::NONE,data.find_filtered(filter,bin_t(10,0)).base_left());
@@ -280,8 +285,8 @@ TEST(BinsTest,CopyRange) {
 
 TEST(BinsTest, Mass) {
     binmap_t b;
-    b.set(bin_t(6,0),binmap_t::FILLED);
-    b.set(bin_t(0,0),binmap_t::EMPTY);
+    b.set(bin_t(6,0));
+    b.reset(bin_t(0,0));
     EXPECT_EQ(63,b.mass());
     EXPECT_FALSE(b.is_empty());
     b.clear();

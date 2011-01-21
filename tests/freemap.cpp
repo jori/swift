@@ -37,7 +37,7 @@ uint8_t rand_norm (uint8_t lim) {
 TEST(FreemapTest,Freemap) {
     binmap_t space;
     const bin_t top(30,0);
-    space.set(top,binmap_t::EMPTY);
+    space.reset(top);
     typedef std::pair<int,bin_t> timebin_t;
     typedef std::set<timebin_t> ts_t;
     ts_t to_free;
@@ -49,7 +49,7 @@ TEST(FreemapTest,Freemap) {
                 alloc = alloc.left();
             ASSERT_NE(0ULL,~alloc.toUInt());
             EXPECT_TRUE(space.is_empty(alloc));
-            space.set(alloc,binmap_t::FILLED);
+            space.set(alloc);
             long dealloc_time = 1<<rand_norm(22);
             printf("alloc 2**%i starting at %lli for %li ticks\n",
                 (int)lr,alloc.toUInt(),dealloc_time);
@@ -60,7 +60,7 @@ TEST(FreemapTest,Freemap) {
         while (to_free.begin()->first<=t) {
             bin_t freebin = to_free.begin()->second;
             to_free.erase(to_free.begin());
-            space.set(freebin,binmap_t::EMPTY);
+            space.reset(freebin);
             printf("freed at %lli\n",
                 freebin.toUInt());
        }
@@ -72,7 +72,7 @@ TEST(FreemapTest,Freemap) {
         //space.dump("space");
     }
     for(ts_t::iterator i=to_free.begin(); i!=to_free.end(); i++)
-        space.set(i->second,binmap_t::EMPTY);
+        space.reset(i->second);
     EXPECT_TRUE(space.is_empty(top));
 }
 

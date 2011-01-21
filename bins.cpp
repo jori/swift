@@ -280,7 +280,7 @@ bin_t binmap_t::find (const bin_t range, fill_t seek) {
 
 
 void binmap_t::clear () {
-    set(bin_t(height,0),EMPTY);
+    reset(bin_t(height,0));
 }
 
 
@@ -298,19 +298,35 @@ uint64_t binmap_t::mass () {
 }
 
 
-void binmap_t::set (bin_t bin, fill_t val) {
+void binmap_t::set (bin_t bin) {
     if (bin.is_none())
         return;
-    assert(val==FILLED || val==EMPTY);
     iterator i(this,bin,false);
-    while (i.bin()!=bin && (i.deep() || *i!=val))
+    while (i.bin()!=bin && (i.deep() || *i!=FILLED))
         i.towards(bin);
-    if (!i.deep() && *i==val)
+    if (!i.deep() && *i==FILLED)
         return;
     while (i.deep()) 
         i.left();
     do {
-        *i = val;
+        *i = FILLED;
+        i.next();
+    } while (bin.contains(i.bin()));
+    // dump("just set");
+}
+
+void binmap_t::reset (bin_t bin) {
+    if (bin.is_none())
+        return;
+    iterator i(this,bin,false);
+    while (i.bin()!=bin && (i.deep() || *i!=EMPTY))
+        i.towards(bin);
+    if (!i.deep() && *i==EMPTY)
+        return;
+    while (i.deep())
+        i.left();
+    do {
+        *i = EMPTY;
         i.next();
     } while (bin.contains(i.bin()));
     // dump("just set");

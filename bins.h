@@ -39,8 +39,10 @@ public:
     ~binmap_t(); 
 
     /** Set value for the bin. */
-    void        set (bin_t bin, fill_t val=FILLED);
-    
+    void        set (bin_t bin);
+
+    void        reset (bin_t bin);
+
     typedef enum {
         OR_OP,
         AND_OP,

@@ -327,7 +327,7 @@ bool            HashTree::OfferData (bin_t pos, const char* data, size_t length)
     }
 
     //printf("g %lli %s\n",(uint64_t)pos,hash.hex().c_str());
-    ack_out_.set(pos,binmap_t::FILLED);
+    ack_out_.set(pos);
     pwrite(fd_,data,length,pos.base_offset()<<10);
     complete_ += length;
     completek_++;
