@@ -11,23 +11,6 @@
 const bin_t bin_t::NONE(0xffffffffffffffffULL);
 const bin_t bin_t::ALL(0x7fffffffffffffffULL);
 
-uint32_t bin_t::to32() const {
-    if (v<0xffffffff && v!=0x7fffffff)
-        return (uint32_t)v;
-    if (v==ALL)
-        return 0x7fffffff;
-    return 0xffffffff;
-}
-
-bin_t::bin_t(const uint32_t val) {
-    if (val==0x7fffffffU)
-        v = ALL.v;
-    else if (val==0xffffffffU)
-        v = NONE.v;
-    else
-        v = val;
-}
-
 int bin_t::peaks (uint64_t length, bin_t* peaks) {
     int pp=0;
     uint8_t layer = 0;

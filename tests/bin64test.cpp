@@ -7,6 +7,7 @@
  *
  */
 #include "bin64.h"
+#include "bin_utils.h"
 #include <gtest/gtest.h>
 
 TEST(Bin64Test,InitGet) {
@@ -66,10 +67,10 @@ TEST(Bin64Test, Advanced) {
 
 TEST(Bin64Test, Bits) {
     bin_t all = bin_t::ALL, none = bin_t::NONE, big = bin_t(40,18);
-    uint32_t a32 = all.to32(), n32 = none.to32(), b32 = big.to32();
+    uint32_t a32 = bin_toUInt32(all), n32 = bin_toUInt32(none), b32 = bin_toUInt32(big);
     EXPECT_EQ(0x7fffffff,a32);
     EXPECT_EQ(0xffffffff,n32);
-    EXPECT_EQ(bin_t::NONE.to32(),b32);
+    EXPECT_EQ(bin_t::NONE,bin_fromUInt32(b32));
 }
 
 int main (int argc, char** argv) {

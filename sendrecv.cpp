@@ -6,6 +6,7 @@
  *  Copyright 2009 Delft University of Technology. All rights reserved.
  *
  */
+#include "bin_utils.h"
 #include "swift.h"
 #include <algorithm>  // kill it
 
@@ -25,7 +26,7 @@ void    Channel::AddPeakHashes (struct evbuffer *evb) {
     for(int i=0; i<file().peak_count(); i++) {
         bin_t peak = file().peak(i);
         evbuffer_add_8(evb, SWIFT_HASH);
-        evbuffer_add_32be(evb, (uint32_t)peak);
+        evbuffer_add_32be(evb, bin_toUInt32(peak));
         evbuffer_add_hash(evb, file().peak_hash(i));
         dprintf("%s #%u +phash %s\n",tintstr(),id_,peak.str());
     }
@@ -38,7 +39,7 @@ void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
             ack_in_.get(pos.parent())==binmap_t::EMPTY  ) {
         bin_t uncle = pos.sibling();
         evbuffer_add_8(evb, SWIFT_HASH);
-        evbuffer_add_32be(evb, (uint32_t)uncle);
+        evbuffer_add_32be(evb, bin_toUInt32(uncle));
         evbuffer_add_hash(evb,  file().hash(uncle) );
         dprintf("%s #%u +hash %s\n",tintstr(),id_,uncle.str());
         pos = pos.parent();
@@ -94,7 +95,7 @@ bin_t        Channel::DequeueHint () {
 void    Channel::AddHandshake (struct evbuffer *evb) {
     if (!peer_channel_id_) { // initiating
         evbuffer_add_8(evb, SWIFT_HASH);
-        evbuffer_add_32be(evb, bin_t::ALL.to32());
+        evbuffer_add_32be(evb, bin_toUInt32(bin_t::ALL));
         evbuffer_add_hash(evb, file().root_hash());
         dprintf("%s #%u +hash ALL %s\n",
                 tintstr(),id_,file().root_hash().hex().c_str());
@@ -161,7 +162,7 @@ void    Channel::AddHint (struct evbuffer *evb) {
 
         if (!hint.is_none()) {
             evbuffer_add_8(evb, SWIFT_HINT);
-            evbuffer_add_32be(evb, hint);
+            evbuffer_add_32be(evb, bin_toUInt32(hint));
             dprintf("%s #%u +hint %s [%lli]\n",tintstr(),id_,hint.str(),hint_out_size_);
             hint_out_.push_back(hint);
             hint_out_size_ += hint.base_length();
@@ -206,7 +207,7 @@ bin_t        Channel::AddData (struct evbuffer *evb) {
     }
 
     evbuffer_add_8(evb, SWIFT_DATA);
-    evbuffer_add_32be(evb, tosend.to32());
+    evbuffer_add_32be(evb, bin_toUInt32(tosend));
 
     uint8_t buf[1024];
     size_t r = pread(file().file_descriptor(),buf,1024,tosend.base_offset()<<10);
@@ -231,7 +232,7 @@ void    Channel::AddAck (struct evbuffer *evb) {
         return;
     // sometimes, we send a HAVE (e.g. in case the peer did repetitive send)
     evbuffer_add_8(evb, data_in_.time==TINT_NEVER?SWIFT_HAVE:SWIFT_ACK);
-    evbuffer_add_32be(evb, data_in_.bin.to32());
+    evbuffer_add_32be(evb, bin_toUInt32(data_in_.bin));
     if (data_in_.time!=TINT_NEVER)
         evbuffer_add_64be(evb, data_in_.time);
     have_out_.set(data_in_.bin);
@@ -246,7 +247,7 @@ void    Channel::AddAck (struct evbuffer *evb) {
 void    Channel::AddHave (struct evbuffer *evb) {
     if (!data_in_dbl_.is_none()) { // TODO: do redundancy better
         evbuffer_add_8(evb, SWIFT_HAVE);
-        evbuffer_add_32be(evb, data_in_dbl_.to32());
+        evbuffer_add_32be(evb, bin_toUInt32(data_in_dbl_));
         data_in_dbl_=bin_t::NONE;
     }
     for(int count=0; count<4; count++) {
@@ -257,7 +258,7 @@ void    Channel::AddHave (struct evbuffer *evb) {
         ack = file().ack_out().cover(ack);
         have_out_.set(ack);
         evbuffer_add_8(evb, SWIFT_HAVE);
-        evbuffer_add_32be(evb, ack.to32());
+        evbuffer_add_32be(evb, bin_toUInt32(ack));
         dprintf("%s #%u +have %s\n",tintstr(),id_,ack.str());
     }
 }
@@ -295,7 +296,7 @@ void    Channel::Recv (struct evbuffer *evb) {
 
 
 void    Channel::OnHash (struct evbuffer *evb) {
-    bin_t pos = evbuffer_remove_32be(evb);
+    bin_t pos = bin_fromUInt32(evbuffer_remove_32be(evb));
     Sha1Hash hash = evbuffer_remove_hash(evb);
     file().OfferHash(pos,hash);
     dprintf("%s #%u -hash %s\n",tintstr(),id_,pos.str());
@@ -324,7 +325,7 @@ void    Channel::CleanHintOut (bin_t pos) {
 
 
 bin_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted data
-    bin_t pos = evbuffer_remove_32be(evb);
+    bin_t pos = bin_fromUInt32(evbuffer_remove_32be(evb));
     if (file().ack_out().get(pos)) {
         data_in_ = tintbin(TINT_NEVER,transfer().ack_out().cover(pos));
         return bin_t::NONE;
@@ -357,7 +358,7 @@ bin_t Channel::OnData (struct evbuffer *evb) {  // TODO: HAVE NONE for corrupted
 
 
 void    Channel::OnAck (struct evbuffer *evb) {
-    bin_t ackd_pos = evbuffer_remove_32be(evb);
+    bin_t ackd_pos = bin_fromUInt32(evbuffer_remove_32be(evb));
     tint peer_time = evbuffer_remove_64be(evb); // FIXME 32
     // FIXME FIXME: wrap around here
     if (ackd_pos.is_none())
@@ -439,7 +440,7 @@ void Channel::TimeoutDataOut ( ) {
 
 
 void Channel::OnHave (struct evbuffer *evb) {
-    bin_t ackd_pos = evbuffer_remove_32be(evb);
+    bin_t ackd_pos = bin_fromUInt32(evbuffer_remove_32be(evb));
     if (ackd_pos.is_none())
         return; // wow, peer has hashes
     ack_in_.set(ackd_pos);
@@ -448,7 +449,7 @@ void Channel::OnHave (struct evbuffer *evb) {
 
 
 void    Channel::OnHint (struct evbuffer *evb) {
-    bin_t hint = evbuffer_remove_32be(evb);
+    bin_t hint = bin_fromUInt32(evbuffer_remove_32be(evb));
     // FIXME: wake up here
     hint_in_.push_back(hint);
     dprintf("%s #%u -hint %s\n",tintstr(),id_,hint.str());
@@ -510,7 +511,7 @@ void    Channel::RecvDatagram (SOCKET socket) {
         if (hashid!=SWIFT_HASH)
             return_log ("%s #0 no hash in the initial handshake %s\n",
                         tintstr(),addr.str());
-        bin_t pos = evbuffer_remove_32be(evb);
+        bin_t pos = bin_fromUInt32(evbuffer_remove_32be(evb));
         if (!pos.is_all())
             return_log ("%s #0 that is not the root hash %s\n",tintstr(),addr.str());
         hash = evbuffer_remove_hash(evb);
@@ -519,8 +520,8 @@ void    Channel::RecvDatagram (SOCKET socket) {
             return_log ("%s #0 hash %s unknown, no such file %s\n",tintstr(),hash.hex().c_str(),addr.str());
         dprintf("%s #0 -hash ALL %s\n",tintstr(),hash.hex().c_str());
         for(binqueue::iterator i=file->hs_in_.begin(); i!=file->hs_in_.end(); i++)
-            if (channels[*i] && channels[*i]->peer_==addr &&
-                channels[*i]->last_recv_time_>NOW-TINT_SEC*2)
+            if (channels[i->toUInt()] && channels[i->toUInt()]->peer_==addr &&
+                channels[i->toUInt()]->last_recv_time_>NOW-TINT_SEC*2)
                 return_log("%s #0 have a channel already to %s\n",tintstr(),addr.str());
         channel = new Channel(file, socket, addr);
     } else {

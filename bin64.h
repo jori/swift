@@ -31,13 +31,13 @@ struct bin_t {
 
     bin_t() : v(NONE.v) {}
     bin_t(const bin_t&b) : v(b.v) {}
-    bin_t(const uint32_t val) ;
     bin_t(const uint64_t val) : v(val) {}
     bin_t(uint8_t layer, uint64_t offset) :
         v( (offset<<(layer+1)) | ((1ULL<<layer)-1) ) {}
     operator uint64_t () const { return v; }
-    uint32_t to32() const ;
     bool operator == (bin_t& b) const { return v==b.v; }
+
+    uint64_t toUInt() const { return v; }
 
     bool is_all() const { return (*this) == ALL; }
     bool is_none() const { return (*this) == NONE; }
