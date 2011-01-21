@@ -17,10 +17,6 @@
 	#define RANDOM	random
 #endif
 
-bool operator < (const bin_t & left, const bin_t & right) {
-	return left.toUInt() < right.toUInt();
-}
-
 int bins_stripe_count (binmap_t& b) {
     int stripe_count;
     uint64_t * stripes = b.get_stripes(stripe_count);

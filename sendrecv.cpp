@@ -325,7 +325,15 @@ void    Channel::CleanHintOut (bin_t pos) {
     }
     while (hint_out_.front().bin!=pos) {
         tintbin f = hint_out_.front();
-        f.bin = f.bin.towards(pos);
+
+        assert (f.bin.contains(pos));
+
+        if (pos < f.bin) {
+            f.bin.to_left();
+        } else {
+            f.bin.to_right();
+        }
+
         hint_out_.front().bin = f.bin.sibling();
         hint_out_.push_front(f);
     }

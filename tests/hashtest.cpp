@@ -7,7 +7,7 @@
  *
  */
 #include <fcntl.h>
-#include "bin64.h"
+#include "bin.h"
 #include <gtest/gtest.h>
 #include "hashtree.h"
 

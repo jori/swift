@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "bin64.h"
+#include "bin.h"
 
 int main (int argn, char** args) {
     int lr;

@@ -1,7 +1,7 @@
 #ifndef __bin_utils_h__
 #define __bin_utils_h__
 
-#include "bin64.h"
+#include "bin.h"
 #include <stdint.h>
 
 

@@ -218,7 +218,10 @@ void iterator::to (bool right) {
     if (!deep())
         host->split(half);
     history[layer()] = half; // FIXME
-    pos = pos.to(right);
+    if (right)
+        pos.to_right();
+    else
+        pos.to_left();
     layer_--;
     if ( (host->twist_mask >> layer()) & 1 )
         right = !right; // twist it!

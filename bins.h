@@ -8,7 +8,10 @@
  */
 #ifndef BINS_H
 #define BINS_H
-#include "bin64.h"
+
+#include "bin.h"
+#include <cassert>
+#include <stdint.h>
 
 class iterator; // FIXME shame
 
@@ -209,9 +212,8 @@ public:
     bin_t next_solid () { return next(false, true,0); }
     bin_t bin() { return pos; }
     void towards(bin_t bin) {
-        bin_t next = pos.towards(bin);
-        assert(!next.is_none());
-        to(next.is_right());
+        assert (pos.contains(bin));
+        to (pos < bin);
     }
     void parent() ;
     bool defined() { return !host->deep(half); }

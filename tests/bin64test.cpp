@@ -6,7 +6,7 @@
  *  Copyright 2009 Delft University of Technology. All rights reserved.
  *
  */
-#include "bin64.h"
+#include "bin.h"
 #include "bin_utils.h"
 #include <gtest/gtest.h>
 
