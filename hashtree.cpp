@@ -134,17 +134,17 @@ void            HashTree::Submit () {
             return;
         }
         bin_t pos(0,i);
-        hashes_[pos] = Sha1Hash(kilo,rd);
+        hashes_[pos.toUInt()] = Sha1Hash(kilo,rd);
         ack_out_.set(pos);
         while (pos.is_right()){
             pos = pos.parent();
-            hashes_[pos] = Sha1Hash(hashes_[pos.left()],hashes_[pos.right()]);
+            hashes_[pos.toUInt()] = Sha1Hash(hashes_[pos.left().toUInt()],hashes_[pos.right().toUInt()]);
         }
         complete_+=rd;
         completek_++;
     }
     for (int p=0; p<peak_count_; p++) {
-        peak_hashes_[p] = hashes_[peaks_[p]];
+        peak_hashes_[p] = hashes_[peaks_[p].toUInt()];
     }
 
     root_hash_ = DeriveRoot();
@@ -161,7 +161,7 @@ void            HashTree::RecoverProgress () {
     int peak_count = bin_t::peaks(sizek,peaks);
     for(int i=0; i<peak_count; i++) {
         Sha1Hash peak_hash;
-        file_seek(hash_fd_,peaks[i]*sizeof(Sha1Hash));
+        file_seek(hash_fd_,peaks[i].toUInt()*sizeof(Sha1Hash));
         if (read(hash_fd_,&peak_hash,sizeof(Sha1Hash))!=sizeof(Sha1Hash))
             return;
         OfferPeakHash(peaks[i], peak_hash);
@@ -176,13 +176,13 @@ void            HashTree::RecoverProgress () {
     for(int p=0; p<packet_size(); p++) {
         char buf[1<<10];
         bin_t pos(0,p);
-        if (hashes_[pos]==Sha1Hash::ZERO)
+        if (hashes_[pos.toUInt()]==Sha1Hash::ZERO)
             continue;
         size_t rd = read(fd_,buf,1<<10);
         if (rd!=(1<<10) && p!=packet_size()-1)
             break;
         if (rd==(1<<10) && !memcmp(buf, zeros, rd) &&
-                hashes_[pos]!=kilo_zero) // FIXME
+                hashes_[pos.toUInt()]!=kilo_zero) // FIXME
             continue;
         if ( data_recheck_ && !OfferHash(pos, Sha1Hash(buf,rd)) )
             continue;
@@ -240,7 +240,7 @@ bool            HashTree::OfferPeakHash (bin_t pos, const Sha1Hash& hash) {
     }
 
     for(int i=0; i<peak_count_; i++)
-        hashes_[peaks_[i]] = peak_hashes_[i];
+        hashes_[peaks_[i].toUInt()] = peak_hashes_[i];
     return true;
 }
 
@@ -288,20 +288,20 @@ bool            HashTree::OfferHash (bin_t pos, const Sha1Hash& hash) {
     if (peak.is_none())
         return false;
     if (peak==pos)
-        return hash == hashes_[pos];
+        return hash == hashes_[pos.toUInt()];
     if (ack_out_.get(pos.parent())!=binmap_t::EMPTY)
-        return hash==hashes_[pos]; // have this hash already, even accptd data
-    hashes_[pos] = hash;
+        return hash==hashes_[pos.toUInt()]; // have this hash already, even accptd data
+    hashes_[pos.toUInt()] = hash;
     if (!pos.is_base())
         return false; // who cares?
     bin_t p = pos;
     Sha1Hash uphash = hash;
     while ( p!=peak && ack_out_.get(p)==binmap_t::EMPTY ) {
-        hashes_[p] = uphash;
+        hashes_[p.toUInt()] = uphash;
         p = p.parent();
-        uphash = Sha1Hash(hashes_[p.left()],hashes_[p.right()]) ;
+        uphash = Sha1Hash(hashes_[p.left().toUInt()],hashes_[p.right().toUInt()]) ;
     }// walk to the nearest proven hash
-    return uphash==hashes_[p];
+    return uphash==hashes_[p.toUInt()];
 }
 
 

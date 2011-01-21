@@ -7,6 +7,7 @@
  *
  */
 #include "bin64.h"
+#include <ostream>
 
 const bin_t bin_t::NONE(0xffffffffffffffffULL);
 const bin_t bin_t::ALL(0x7fffffffffffffffULL);
@@ -21,7 +22,7 @@ int bin_t::peaks (uint64_t length, bin_t* peaks) {
         layer++;
     }
     for(int i=0; i<(pp>>1); i++) {
-        uint64_t memo = peaks[pp-1-i];
+        const bin_t memo = peaks[pp-1-i];
         peaks[pp-1-i] = peaks[i];
         peaks[i] = memo;
     }
@@ -42,4 +43,8 @@ const char* bin_t::str () const {
     else
         sprintf(_b64sr[_rsc],"(%i,%lli)",(int)layer(),layer_offset());
     return _b64sr[_rsc];
+}
+
+std::ostream & operator << (std::ostream & ostream, const bin_t & bin) {
+    return ostream << bin.str();
 }

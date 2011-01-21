@@ -51,7 +51,7 @@ public:
             return bin_t(0,0); // whoever sends it first
         }
     retry:      // bite me
-        twist_ &= (file().peak(0)) & ((1<<6)-1);
+        twist_ &= (file().peak(0).toUInt()) & ((1<<6)-1);
         if (twist_) {
             offer.twist(twist_);
             ack_hint_out_.twist(twist_);

@@ -104,7 +104,7 @@ public:
     /** Return the peak bin the given bin belongs to. */
     bin_t           peak_for (bin_t pos) const;
     /** Return a (Merkle) hash for the given bin. */
-    const Sha1Hash& hash (bin_t pos) const {return hashes_[pos];}
+    const Sha1Hash& hash (bin_t pos) const {return hashes_[pos.toUInt()];}
     /** Give the root hash, which is effectively an identifier of this file. */
     const Sha1Hash& root_hash () const { return root_hash_; }
     /** Get file size, in bytes. */

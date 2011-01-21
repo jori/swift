@@ -17,6 +17,10 @@
 	#define RANDOM	random
 #endif
 
+bool operator < (const bin_t & left, const bin_t & right) {
+	return left.toUInt() < right.toUInt();
+}
+
 int bins_stripe_count (binmap_t& b) {
     int stripe_count;
     uint64_t * stripes = b.get_stripes(stripe_count);
@@ -47,12 +51,12 @@ TEST(FreemapTest,Freemap) {
             bin_t alloc = space.find(top);
             while (alloc.layer()>lr)
                 alloc = alloc.left();
-            ASSERT_NE(0ULL,~alloc);
+            ASSERT_NE(0ULL,~alloc.toUInt());
             EXPECT_EQ(binmap_t::EMPTY, space.get(alloc));
             space.set(alloc,binmap_t::FILLED);
             long dealloc_time = 1<<rand_norm(22);
             printf("alloc 2**%i starting at %lli for %li ticks\n",
-                (int)lr,(uint64_t)alloc,dealloc_time);
+                (int)lr,alloc.toUInt(),dealloc_time);
             dealloc_time += t;
             to_free.insert(timebin_t(dealloc_time,alloc));
         }
@@ -62,7 +66,7 @@ TEST(FreemapTest,Freemap) {
             to_free.erase(to_free.begin());
             space.set(freebin,binmap_t::EMPTY);
             printf("freed at %lli\n",
-                (uint64_t)freebin);
+                freebin.toUInt());
        }
         // log: space taken, gaps, binmap cells, tree cells
         int cells = space.size();

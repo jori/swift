@@ -49,7 +49,7 @@ void    Channel::AddUncleHashes (struct evbuffer *evb, bin_t pos) {
 
 bin_t           Channel::ImposeHint () {
     uint64_t twist = peer_channel_id_;  // got no hints, send something randomly
-    twist &= file().peak(0); // FIXME may make it semi-seq here
+    twist &= file().peak(0).toUInt(); // FIXME may make it semi-seq here
     file().ack_out().twist(twist);
     ack_in_.twist(twist);
     bin_t my_pick =

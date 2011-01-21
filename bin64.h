@@ -9,6 +9,7 @@
 #ifndef BIN64_H
 #define BIN64_H
 #include <assert.h>
+#include <iosfwd>
 #include "compat.h"
 
 
@@ -30,12 +31,12 @@ struct bin_t {
     static const bin_t ALL;
 
     bin_t() : v(NONE.v) {}
-    bin_t(const bin_t&b) : v(b.v) {}
-    bin_t(const uint64_t val) : v(val) {}
+    explicit bin_t(const uint64_t val) : v(val) {}
     bin_t(uint8_t layer, uint64_t offset) :
         v( (offset<<(layer+1)) | ((1ULL<<layer)-1) ) {}
-    operator uint64_t () const { return v; }
-    bool operator == (bin_t& b) const { return v==b.v; }
+
+    bool operator == (const bin_t& b) const { return v==b.v; }
+    bool operator != (const bin_t& b) const { return v!=b.v; }
 
     uint64_t toUInt() const { return v; }
 
@@ -171,6 +172,9 @@ private:
         return (layer_bits()+1)>>1;
     }
 };
+
+
+std::ostream & operator << (std::ostream & ostream, const bin_t & bin);
 
 
 #endif
