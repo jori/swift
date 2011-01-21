@@ -57,7 +57,7 @@ public:
             ack_hint_out_.twist(twist_);
         }
         bin_t range_tw = bin_t::ALL;
-        if (range_!=bin_t::ALL)
+        if (!range_.is_all())
             range_tw = range_.twisted(twist_);
         bin_t hint = offer.find_filtered
             (ack_hint_out_,range_tw,binmap_t::FILLED);
@@ -66,7 +66,7 @@ public:
             offer.twist(0);
             ack_hint_out_.twist(0);
         }
-        if (hint==bin_t::NONE) {
+        if (hint.is_none()) {
             return hint; // TODO: end-game mode
         }
         if (!file().ack_out().is_empty(hint)) { // unhinted/late data

@@ -24,7 +24,7 @@ TEST(Sha1HashTest,Trivial) {
 
 TEST(Sha1HashTest,OfferDataTest) {
 	Sha1Hash roothash123(true,hash123);
-	for(bin_t pos(0,0); pos!=bin_t::ALL; pos=pos.parent())
+	for(bin_t pos(0,0); !pos.is_all(); pos=pos.parent())
 		roothash123 = Sha1Hash(roothash123,Sha1Hash::ZERO);
     unlink("123");
     EXPECT_STREQ(rooth123,roothash123.hex().c_str());

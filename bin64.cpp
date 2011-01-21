@@ -8,24 +8,22 @@
  */
 #include "bin64.h"
 
-const uint64_t bin_t::NONE = 0xffffffffffffffffULL;
-const uint64_t bin_t::ALL = 0x7fffffffffffffffULL;
-const uint32_t bin_t::NONE32 = 0xffffffffU;
-const uint32_t bin_t::ALL32 = 0x7fffffffU;
+const bin_t bin_t::NONE(0xffffffffffffffffULL);
+const bin_t bin_t::ALL(0x7fffffffffffffffULL);
 
 uint32_t bin_t::to32() const {
     if (v<0xffffffff && v!=0x7fffffff)
         return (uint32_t)v;
     if (v==ALL)
-        return ALL32;
-    return NONE32;
+        return 0x7fffffff;
+    return 0xffffffff;
 }
 
 bin_t::bin_t(const uint32_t val) {
-    if (val==ALL32)
-        v = ALL;
-    else if (val==NONE32)
-        v = NONE;
+    if (val==0x7fffffffU)
+        v = ALL.v;
+    else if (val==0xffffffffU)
+        v = NONE.v;
     else
         v = val;
 }
@@ -54,9 +52,9 @@ const char* bin_t::str () const {
     static char _b64sr[4][32];
     static int _rsc;
     _rsc = (_rsc+1) & 3;
-    if (v==ALL)
+    if (is_all())
         return "(ALL)";
-    else if (v==NONE)
+    else if (is_none())
         return "(NONE)";
     else
         sprintf(_b64sr[_rsc],"(%i,%lli)",(int)layer(),layer_offset());

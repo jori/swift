@@ -210,7 +210,7 @@ public:
     bin_t bin() { return pos; }
     void towards(bin_t bin) {
         bin_t next = pos.towards(bin);
-        assert(next!=bin_t::NONE);
+        assert(!next.is_none());
         to(next.is_right());
     }
     void parent() ;

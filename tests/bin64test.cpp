@@ -37,10 +37,10 @@ TEST(Bin64Test,Navigation) {
 
 TEST(Bin64Test,Overflows) {
 
-    EXPECT_FALSE(bin_t(bin_t::NONE).contains(bin_t(0,1)));
-    EXPECT_TRUE(bin_t(bin_t::ALL).contains(bin_t(0,1)));
-    EXPECT_EQ(0,bin_t::none().base_length());
-    EXPECT_EQ(bin_t::none(),bin_t::none().twisted(123));
+    EXPECT_FALSE(bin_t::NONE.contains(bin_t(0,1)));
+    EXPECT_TRUE(bin_t::ALL.contains(bin_t(0,1)));
+    EXPECT_EQ(0,bin_t::NONE.base_length());
+    EXPECT_EQ(bin_t::NONE,bin_t::NONE.twisted(123));
     /*EXPECT_EQ(bin64_t::NONE.parent(),bin64_t::NONE);
     EXPECT_EQ(bin64_t::NONE.left(),bin64_t::NONE);
     EXPECT_EQ(bin64_t::NONE.right(),bin64_t::NONE);
@@ -69,7 +69,7 @@ TEST(Bin64Test, Bits) {
     uint32_t a32 = all.to32(), n32 = none.to32(), b32 = big.to32();
     EXPECT_EQ(0x7fffffff,a32);
     EXPECT_EQ(0xffffffff,n32);
-    EXPECT_EQ(bin_t::NONE32,b32);
+    EXPECT_EQ(bin_t::NONE.to32(),b32);
 }
 
 int main (int argc, char** argv) {

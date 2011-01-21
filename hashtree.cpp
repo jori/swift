@@ -250,7 +250,7 @@ Sha1Hash        HashTree::DeriveRoot () {
     bin_t p = peaks_[c];
     Sha1Hash hash = peak_hashes_[c];
     c--;
-    while (p!=bin_t::ALL) {
+    while (!p.is_all()) {
         if (p.is_left()) {
             p = p.parent();
             hash = Sha1Hash(hash,Sha1Hash::ZERO);
@@ -285,7 +285,7 @@ bool            HashTree::OfferHash (bin_t pos, const Sha1Hash& hash) {
     if (!size_)  // only peak hashes are accepted at this point
         return OfferPeakHash(pos,hash);
     bin_t peak = peak_for(pos);
-    if (peak==bin_t::NONE)
+    if (peak.is_none())
         return false;
     if (peak==pos)
         return hash == hashes_[pos];
@@ -315,7 +315,7 @@ bool            HashTree::OfferData (bin_t pos, const char* data, size_t length)
     if (ack_out_.get(pos)==binmap_t::FILLED)
         return true; // to set data_in_
     bin_t peak = peak_for(pos);
-    if (peak==bin_t::NONE)
+    if (peak.is_none())
         return false;
 
     Sha1Hash data_hash(data,length);

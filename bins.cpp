@@ -191,7 +191,7 @@ bin_t iterator::next (bool stop_undeep, bool stop_solid, uint8_t stop_layer) {
 }
 
 
-iterator::iterator(binmap_t* host_, bin_t start, bool split) {
+iterator::iterator(binmap_t* host_, bin_t start, bool split) { 
     host = host_;
     half = 0;
     for(int i=0; i<64; i++)
@@ -277,7 +277,7 @@ bin_t binmap_t::find (const bin_t range, fill_t seek) {
 
 
 uint16_t binmap_t::get (bin_t bin) {
-    if (bin==bin_t::NONE)
+    if (bin.is_none())
         return EMPTY;
     iterator i(this,bin,true);
     //while ( i.pos!=bin && 
@@ -309,7 +309,7 @@ uint64_t binmap_t::mass () {
 
 
 void binmap_t::set (bin_t bin, fill_t val) {
-    if (bin==bin_t::NONE)
+    if (bin.is_none())
         return;
     assert(val==FILLED || val==EMPTY);
     iterator i(this,bin,false);
@@ -379,7 +379,7 @@ void    binmap_t::remove (binmap_t& b) {
 
 
 bin_t     binmap_t::cover(bin_t val) {
-    if (val==bin_t::NONE)
+    if (val.is_none())
         return val;
     iterator i(this,val,false);
     while (i.pos!=val && !i.solid())
@@ -390,10 +390,10 @@ bin_t     binmap_t::cover(bin_t val) {
 }
 
 
-bin_t     binmap_t::find_filtered
-    (binmap_t& filter, bin_t range, fill_t seek)
+bin_t     binmap_t::find_filtered 
+    (binmap_t& filter, bin_t range, fill_t seek)  
 {
-    if (range==bin_t::ALL)
+    if (range.is_all())
         range = bin_t ( height>filter.height ? height : filter.height, 0 );
     iterator ti(this,range,true), fi(&filter,range,true);
     fill_t stop = seek==EMPTY ? FILLED : EMPTY;
@@ -415,11 +415,11 @@ bin_t     binmap_t::find_filtered
             break;
         ti.sibling(), fi.sibling();
     }
-    return bin_t::NONE;
+    return bin_t::NONE;    
 }
 
 void        binmap_t::range_op (binmap_t& mask, bin_t range, bin_op_t op) {
-    if (range==bin_t::ALL)
+    if (range.is_all())
         range = bin_t ( height>mask.height ? height : mask.height, 0 );
     iterator zis(this,range,true), zat(&mask,range,true);
     while (range.contains(zis.pos)) {
@@ -463,7 +463,7 @@ uint64_t    binmap_t::seq_length () {
 
 
 bool        binmap_t::is_solid (bin_t range, fill_t val)  {
-    if (range==bin_t::ALL)
+    if (range.is_all())
         return !deep(0) && (is_mixed(val) || halves[0]==val);
     iterator i(this,range,false);
     while ( i.pos!=range && (i.deep() || !i.solid()) )

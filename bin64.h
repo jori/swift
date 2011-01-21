@@ -26,12 +26,10 @@
  */
 struct bin_t {
     uint64_t v;
-    static const uint64_t NONE;
-    static const uint64_t ALL;
-    static const uint32_t NONE32;
-    static const uint32_t ALL32;
+    static const bin_t NONE;
+    static const bin_t ALL;
 
-    bin_t() : v(NONE) {}
+    bin_t() : v(NONE.v) {}
     bin_t(const bin_t&b) : v(b.v) {}
     bin_t(const uint32_t val) ;
     bin_t(const uint64_t val) : v(val) {}
@@ -41,8 +39,8 @@ struct bin_t {
     uint32_t to32() const ;
     bool operator == (bin_t& b) const { return v==b.v; }
 
-    static bin_t none () { return NONE; }
-    static bin_t all () { return ALL; }
+    bool is_all() const { return (*this) == ALL; }
+    bool is_none() const { return (*this) == NONE; }
 
     uint64_t layer_bits () const {
         return v ^ (v+1);
@@ -50,7 +48,7 @@ struct bin_t {
 
     /** Get the sibling interval in the binary tree. */
     bin_t sibling () const {
-        // if (v==ALL) return NONE;
+        // if (is_all()) return NONE;
         return bin_t(v^(tail_bit()<<1));
     }
 
@@ -103,7 +101,7 @@ struct bin_t {
 
     /** Check whether this bin is within the specified bin. */
     bool    contains (bin_t bin) const {
-        if (v == bin_t::NONE) {
+        if (is_none()) {
             return false;
         }
 
@@ -142,7 +140,7 @@ struct bin_t {
 
     /** Get the leftmost basic bin within this bin. */
     bin_t   base_left () const {
-        if (v==NONE)
+        if (is_none())
             return NONE;
         return bin_t(0,base_offset());
     }

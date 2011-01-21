@@ -42,7 +42,7 @@ TEST(TransferTest,TransferFile) {
     E000 = Sha1Hash(E0,Sha1Hash::ZERO);
     ABCDE000 = Sha1Hash(ABCD,E000);
     ROOT = ABCDE000;
-    for (bin_t pos(3,0); pos!=bin_t::ALL; pos=pos.parent()) {
+    for (bin_t pos(3,0); !pos.is_all(); pos=pos.parent()) {
         ROOT = Sha1Hash(ROOT,Sha1Hash::ZERO);
         //printf("m %lli %s\n",(uint64_t)pos.parent(),ROOT.hex().c_str());
     }

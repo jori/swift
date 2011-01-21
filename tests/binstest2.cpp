@@ -359,7 +359,7 @@ TEST(BinheapTest,Eat) {
     
     EXPECT_EQ(bin_t(2,0),b.pop());
     EXPECT_EQ(bin_t(2,4),b.pop());
-    EXPECT_EQ(bin_t::none(),b.pop());
+    EXPECT_EQ(bin_t::NONE,b.pop());
     
     for (int i=0; i<64; i++) {
         b.push(bin_t(0,i));
