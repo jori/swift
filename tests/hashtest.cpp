@@ -7,7 +7,7 @@
  *
  */
 #include <fcntl.h>
-#include "bin64.h"
+#include "bin.h"
 #include <gtest/gtest.h>
 #include "hashtree.h"
 
@@ -24,14 +24,14 @@ TEST(Sha1HashTest,Trivial) {
 
 TEST(Sha1HashTest,OfferDataTest) {
 	Sha1Hash roothash123(true,hash123);
-	for(bin64_t pos(0,0); pos!=bin64_t::ALL; pos=pos.parent())
+	for(bin_t pos(0,0); !pos.is_all(); pos=pos.parent())
 		roothash123 = Sha1Hash(roothash123,Sha1Hash::ZERO);
     unlink("123");
     EXPECT_STREQ(rooth123,roothash123.hex().c_str());
 	HashTree tree("123",roothash123);
-    tree.OfferHash(bin64_t(0,0),Sha1Hash(true,hash123));
+    tree.OfferHash(bin_t(0,0),Sha1Hash(true,hash123));
 	ASSERT_EQ(1,tree.packet_size());
-    ASSERT_TRUE(tree.OfferData(bin64_t(0,0), "123\n", 4));
+    ASSERT_TRUE(tree.OfferData(bin_t(0,0), "123\n", 4));
     unlink("123");
 	ASSERT_EQ(4,tree.size());
 }
@@ -42,7 +42,7 @@ TEST(Sha1HashTest,SubmitTest) {
     fprintf(f123, "123\n");
     fclose(f123);
     HashTree ht123("123");
-    EXPECT_STREQ(hash123,ht123.hash(bin64_t(0,0)).hex().c_str());
+    EXPECT_STREQ(hash123,ht123.hash(bin_t(0,0)).hex().c_str());
     EXPECT_STREQ(rooth123,ht123.root_hash().hex().c_str());
     EXPECT_EQ(4,ht123.size());
 }

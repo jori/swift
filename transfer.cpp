@@ -49,7 +49,7 @@ void swift::AddProgressCallback (int transfer,ProgressCallback cb,uint8_t agg) {
 }
 
 
-void swift::ExternallyRetrieved (int transfer,bin64_t piece) {
+void swift::ExternallyRetrieved (int transfer,bin_t piece) {
     FileTransfer* trans = FileTransfer::file(transfer);
     if (!trans)
         return;
@@ -94,7 +94,7 @@ int       swift:: Find (Sha1Hash hash) {
 
 void            FileTransfer::OnPexIn (const Address& addr) {
     for(int i=0; i<hs_in_.size(); i++) {
-        Channel* c = Channel::channel(hs_in_[i]);
+        Channel* c = Channel::channel(hs_in_[i].toUInt());
         if (c && c->transfer().fd()==this->fd() && c->peer()==addr)
             return; // already connected
     }
@@ -113,7 +113,7 @@ int        FileTransfer::RevealChannel (int& pex_out_) { // FIXME brainfuck
     if (pex_out_<0)
         pex_out_ = 0;
     while (pex_out_<hs_in_.size()) {
-        Channel* c = Channel::channel(hs_in_[pex_out_]);
+        Channel* c = Channel::channel(hs_in_[pex_out_].toUInt());
         if (c && c->transfer().fd()==this->fd()) {
             if (c->is_established()) {
                 pex_out_ += hs_in_offset_ + 1;

@@ -8,10 +8,12 @@
  */
 
 #include "hashtree.h"
+#include "bin_utils.h"
 //#include <openssl/sha.h>
 #include "sha1.h"
-#include <string.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
 #include <fcntl.h>
 #include "compat.h"
 
@@ -36,10 +38,11 @@ void SHA1 (const void *data, size_t length, unsigned char *hash) {
 }
 
 Sha1Hash::Sha1Hash(const Sha1Hash& left, const Sha1Hash& right) {
-    char data[HASHSZ*2];
-    memcpy(data,left.bits,SIZE);
-    memcpy(data+SIZE,right.bits,SIZE);
-    SHA1((unsigned char*)data,SIZE*2,bits);
+    blk_SHA_CTX ctx;
+    blk_SHA1_Init(&ctx);
+    blk_SHA1_Update(&ctx, left.bits,SIZE);
+    blk_SHA1_Update(&ctx, right.bits,SIZE);
+    blk_SHA1_Final(bits, &ctx);
 }
 
 Sha1Hash::Sha1Hash(const char* data, size_t length) {
@@ -54,11 +57,9 @@ Sha1Hash::Sha1Hash(const uint8_t* data, size_t length) {
 
 Sha1Hash::Sha1Hash(bool hex, const char* hash) {
     if (hex) {
-        char hx[3]; hx[2]=0;
         int val;
         for(int i=0; i<SIZE; i++) {
-            strncpy(hx,hash+i*2,2);
-            if (sscanf(hx, "%x", &val)!=1) {
+            if (sscanf(hash+i*2, "%2x", &val)!=1) {
                 memset(bits,0,20);
                 return;
             }
@@ -92,13 +93,13 @@ complete_(0), completek_(0)
         print_error("cannot open the file");
         return;
     }
-    char hfn[1024] = "";
-    if (!hash_filename) {
-        strcat(hfn, filename);
-        strcat(hfn, ".mhash");
-    } else
-        strcpy(hfn,hash_filename);
-    hash_fd_ = open(hfn,OPENFLAGS,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    std::string hfn;
+    if (!hash_filename){
+        hfn.assign(filename);
+        hfn.append(".mhash");
+        hash_filename = hfn.c_str();
+    }
+    hash_fd_ = open(hash_filename,OPENFLAGS,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
     if (hash_fd_<0) {
         hash_fd_ = 0;
         print_error("cannot open hash file");
@@ -116,7 +117,7 @@ complete_(0), completek_(0)
 void            HashTree::Submit () {
     size_ = file_size(fd_);
     sizek_ = (size_ + 1023) >> 10;
-    peak_count_ = bin64_t::peaks(sizek_,peaks_);
+    peak_count_ = gen_peaks(sizek_,peaks_);
     int hashes_size = Sha1Hash::SIZE*sizek_*2;
     file_resize(hash_fd_,hashes_size);
     hashes_ = (Sha1Hash*) memory_map(hash_fd_,hashes_size);
@@ -125,6 +126,7 @@ void            HashTree::Submit () {
         print_error("mmap failed");
         return;
     }
+    size_t last_piece_size = (sizek_ - 1) % (1<<10) + 1;
     for (size_t i=0; i<sizek_; i++) {
         char kilo[1<<10];
         size_t rd = read(fd_,kilo,1<<10);
@@ -133,17 +135,18 @@ void            HashTree::Submit () {
             hashes_=NULL;
             return;
         }
-        bin64_t pos(0,i);
-        hashes_[pos] = Sha1Hash(kilo,rd);
+        bin_t pos(0,i);
+        hashes_[pos.toUInt()] = Sha1Hash(kilo,rd);
         ack_out_.set(pos);
+        while (pos.is_right()){
+            pos = pos.parent();
+            hashes_[pos.toUInt()] = Sha1Hash(hashes_[pos.left().toUInt()],hashes_[pos.right().toUInt()]);
+        }
         complete_+=rd;
         completek_++;
     }
     for (int p=0; p<peak_count_; p++) {
-        if (!peaks_[p].is_base())
-            for(bin64_t b=peaks_[p].left_foot().parent(); b.within(peaks_[p]); b=b.next_dfsio(1))
-                hashes_[b] = Sha1Hash(hashes_[b.left()],hashes_[b.right()]);
-        peak_hashes_[p] = hashes_[peaks_[p]];
+        peak_hashes_[p] = hashes_[peaks_[p].toUInt()];
     }
 
     root_hash_ = DeriveRoot();
@@ -156,11 +159,11 @@ void            HashTree::Submit () {
 void            HashTree::RecoverProgress () {
     size_t size = file_size(fd_);
     size_t sizek = (size + 1023) >> 10;
-    bin64_t peaks[64];
-    int peak_count = bin64_t::peaks(sizek,peaks);
+    bin_t peaks[64];
+    int peak_count = gen_peaks(sizek,peaks);
     for(int i=0; i<peak_count; i++) {
         Sha1Hash peak_hash;
-        file_seek(hash_fd_,peaks[i]*sizeof(Sha1Hash));
+        file_seek(hash_fd_,peaks[i].toUInt()*sizeof(Sha1Hash));
         if (read(hash_fd_,&peak_hash,sizeof(Sha1Hash))!=sizeof(Sha1Hash))
             return;
         OfferPeakHash(peaks[i], peak_hash);
@@ -174,14 +177,14 @@ void            HashTree::RecoverProgress () {
     Sha1Hash kilo_zero(zeros,1<<10);
     for(int p=0; p<packet_size(); p++) {
         char buf[1<<10];
-        bin64_t pos(0,p);
-        if (hashes_[pos]==Sha1Hash::ZERO)
+        bin_t pos(0,p);
+        if (hashes_[pos.toUInt()]==Sha1Hash::ZERO)
             continue;
         size_t rd = read(fd_,buf,1<<10);
         if (rd!=(1<<10) && p!=packet_size()-1)
             break;
         if (rd==(1<<10) && !memcmp(buf, zeros, rd) &&
-                hashes_[pos]!=kilo_zero) // FIXME
+                hashes_[pos.toUInt()]!=kilo_zero) // FIXME
             continue;
         if ( data_recheck_ && !OfferHash(pos, Sha1Hash(buf,rd)) )
             continue;
@@ -194,12 +197,12 @@ void            HashTree::RecoverProgress () {
 }
 
 
-bool            HashTree::OfferPeakHash (bin64_t pos, const Sha1Hash& hash) {
+bool            HashTree::OfferPeakHash (bin_t pos, const Sha1Hash& hash) {
     assert(!size_);
     if (peak_count_) {
-        bin64_t last_peak = peaks_[peak_count_-1];
+        bin_t last_peak = peaks_[peak_count_-1];
         if ( pos.layer()>=last_peak.layer() ||
-            pos.base_offset()!=last_peak.base_offset()+last_peak.width() )
+            pos.base_offset()!=last_peak.base_offset()+last_peak.base_length() )
             peak_count_ = 0;
     }
     peaks_[peak_count_] = pos;
@@ -210,7 +213,7 @@ bool            HashTree::OfferPeakHash (bin64_t pos, const Sha1Hash& hash) {
     if (mustbe_root!=root_hash_)
         return false;
     for(int i=0; i<peak_count_; i++)
-        sizek_ += peaks_[i].width();
+        sizek_ += peaks_[i].base_length();
 
     // bingo, we now know the file size (rounded up to a KByte)
 
@@ -239,17 +242,17 @@ bool            HashTree::OfferPeakHash (bin64_t pos, const Sha1Hash& hash) {
     }
 
     for(int i=0; i<peak_count_; i++)
-        hashes_[peaks_[i]] = peak_hashes_[i];
+        hashes_[peaks_[i].toUInt()] = peak_hashes_[i];
     return true;
 }
 
 
 Sha1Hash        HashTree::DeriveRoot () {
     int c = peak_count_-1;
-    bin64_t p = peaks_[c];
+    bin_t p = peaks_[c];
     Sha1Hash hash = peak_hashes_[c];
     c--;
-    while (p!=bin64_t::ALL) {
+    while (!p.is_all()) {
         if (p.is_left()) {
             p = p.parent();
             hash = Sha1Hash(hash,Sha1Hash::ZERO);
@@ -272,59 +275,60 @@ int         HashTree::AppendData (char* data, int length) {
 }
 
 
-bin64_t         HashTree::peak_for (bin64_t pos) const {
+bin_t         HashTree::peak_for (bin_t pos) const {
     int pi=0;
-    while (pi<peak_count_ && !pos.within(peaks_[pi]))
+    while (pi<peak_count_ && !peaks_[pi].contains(pos))
         pi++;
-    return pi==peak_count_ ? bin64_t(bin64_t::NONE) : peaks_[pi];
+    return pi==peak_count_ ? bin_t(bin_t::NONE) : peaks_[pi];
 }
 
 
-bool            HashTree::OfferHash (bin64_t pos, const Sha1Hash& hash) {
+bool            HashTree::OfferHash (bin_t pos, const Sha1Hash& hash) {
     if (!size_)  // only peak hashes are accepted at this point
         return OfferPeakHash(pos,hash);
-    bin64_t peak = peak_for(pos);
-    if (peak==bin64_t::NONE)
+    bin_t peak = peak_for(pos);
+    if (peak.is_none())
         return false;
     if (peak==pos)
-        return hash == hashes_[pos];
-    if (ack_out_.get(pos.parent())!=binmap_t::EMPTY)
-        return hash==hashes_[pos]; // have this hash already, even accptd data
-    hashes_[pos] = hash;
+        return hash == hashes_[pos.toUInt()];
+    if (!ack_out_.is_empty(pos.parent()))
+        return hash==hashes_[pos.toUInt()]; // have this hash already, even accptd data
+    hashes_[pos.toUInt()] = hash;
     if (!pos.is_base())
         return false; // who cares?
-    bin64_t p = pos;
+    bin_t p = pos;
     Sha1Hash uphash = hash;
-    while ( p!=peak && ack_out_.get(p)==binmap_t::EMPTY ) {
-        hashes_[p] = uphash;
+    while ( p!=peak && ack_out_.is_empty(p) ) {
+        hashes_[p.toUInt()] = uphash;
         p = p.parent();
-        uphash = Sha1Hash(hashes_[p.left()],hashes_[p.right()]) ;
+        uphash = Sha1Hash(hashes_[p.left().toUInt()],hashes_[p.right().toUInt()]) ;
     }// walk to the nearest proven hash
-    return uphash==hashes_[p];
+    return uphash==hashes_[p.toUInt()];
 }
 
 
-bool            HashTree::OfferData (bin64_t pos, const char* data, size_t length) {
+bool            HashTree::OfferData (bin_t pos, const char* data, size_t length) {
     if (!size())
         return false;
     if (!pos.is_base())
         return false;
-    if (length<1024 && pos!=bin64_t(0,sizek_-1))
+    if (length<1024 && pos!=bin_t(0,sizek_-1))
         return false;
-    if (ack_out_.get(pos)==binmap_t::FILLED)
+    if (ack_out_.is_filled(pos))
         return true; // to set data_in_
-    bin64_t peak = peak_for(pos);
-    if (peak==bin64_t::NONE)
+    bin_t peak = peak_for(pos);
+    if (peak.is_none())
         return false;
 
     Sha1Hash data_hash(data,length);
     if (!OfferHash(pos, data_hash)) {
-        //printf("invalid hash for %s: %s\n",pos.str(),data_hash.hex().c_str()); // paranoid
+//        char bin_name_buf[32];
+//        printf("invalid hash for %s: %s\n",pos.str(bin_name_buf),data_hash.hex().c_str()); // paranoid
         return false;
     }
 
     //printf("g %lli %s\n",(uint64_t)pos,hash.hex().c_str());
-    ack_out_.set(pos,binmap_t::FILLED);
+    ack_out_.set(pos);
     pwrite(fd_,data,length,pos.base_offset()<<10);
     complete_ += length;
     completek_++;
@@ -338,7 +342,7 @@ bool            HashTree::OfferData (bin64_t pos, const char* data, size_t lengt
 
 
 uint64_t      HashTree::seq_complete () {
-    uint64_t seqk = ack_out_.seq_length();
+    uint64_t seqk = ack_out_.find_empty().base_offset();
     if (seqk==sizek_)
         return size_;
     else
