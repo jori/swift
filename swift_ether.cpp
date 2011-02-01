@@ -14,6 +14,8 @@ std::vector<EthernetSwift *> EthernetSwift::sessions(1);
 struct event EthernetSwift::evrecveth;
 tint EthernetSwift::last_send_time = NOW;
 tint EthernetSwift::send_interval = 50*TINT_MSEC; // TODO:?
+uint64_t EthernetSwift::frames_up = 0;
+uint64_t EthernetSwift::frames_down = 0;
 
 EthernetSwift::EthernetSwift(FileTransfer *ft) {
     pkttype = (selftest) ? PACKET_HOST : PACKET_OTHERHOST;
@@ -22,7 +24,7 @@ EthernetSwift::EthernetSwift(FileTransfer *ft) {
     peer_channel = 0;
     memset(peer_mac, 0, ETH_ALEN);
     sessions.push_back(this);
-    transfer->hs_in_.push_back((uint32_t)my_channel);
+    transfer->hs_in_.push_back(bin_t(my_channel));
     evtimer_assign(&evsendeth,Channel::evbase,&SendEthCallback,this);
     if (!swift::IsComplete(transfer->file().file_descriptor()))
 	Open(0, Channel::EncodeID(my_channel), transfer->file().root_hash());
@@ -75,7 +77,7 @@ void EthernetSwift::Open(tint channel, tint rev_channel, const Sha1Hash& hash) {
     evbuffer_add_32be(evb, channel);
     evbuffer_add_8(evb, SWIFT_ETH_OPEN);
     evbuffer_add_32be(evb, rev_channel);
-    evbuffer_add_32be(evb, bin64_t::ALL32);
+    evbuffer_add_32be(evb, bin_toUInt32(bin_t::ALL));
     evbuffer_add_hash(evb, transfer->file().root_hash());
     if (peer_channel)
 	// Add peak hashes:
@@ -84,42 +86,42 @@ void EthernetSwift::Open(tint channel, tint rev_channel, const Sha1Hash& hash) {
 		msgs.push_back(evb);
 		evb = evbuffer_new();
 	    }
-	    bin64_t peak = transfer->file().peak(i);
+	    bin_t peak = transfer->file().peak(i);
 	    evbuffer_add_8(evb, SWIFT_ETH_HASH);
-	    evbuffer_add_32be(evb, (uint32_t)peak);
+	    evbuffer_add_32be(evb, bin_toUInt32(peak));
 	    evbuffer_add_hash(evb, transfer->file().peak_hash(i));
 	}
     msgs.push_back(evb);
 }
 
-void EthernetSwift::Request(tint channel, const bin64_t& range) {
+void EthernetSwift::Request(tint channel, const bin_t& range) {
     struct evbuffer *evb = evbuffer_new();
     AddHdr(evb, mymac, peer_mac);
     evbuffer_add_32be(evb, channel);
     evbuffer_add_8(evb, SWIFT_ETH_REQUEST);
-    evbuffer_add_32be(evb, range.to32());
+    evbuffer_add_32be(evb, bin_toUInt32(range));
     msgs.push_back(evb);
 }
 
 void EthernetSwift::Hash(tint channel, const Sha1Hash& hash) {
 }
 
-void EthernetSwift::Data(tint channel, const bin64_t& range,
+void EthernetSwift::Data(tint channel, const bin_t& range,
 			 struct evbuffer* buf) {
     struct evbuffer *evb = evbuffer_new();
     AddHdr(evb, mymac, peer_mac);
     evbuffer_add_32be(evb, channel);
     // Add uncle hashes
-    bin64_t pos = range;
-    bin64_t peak = transfer->file().peak_for(pos);
+    bin_t pos = range;
+    bin_t peak = transfer->file().peak_for(pos);
     while (pos != peak) {
 	if (evbuffer_get_length(evb) + 5 + Sha1Hash::SIZE > ETH_FRAME_LEN) {
 	    msgs.push_back(evb);
 	    evb = evbuffer_new();
 	}
-        bin64_t uncle = pos.sibling();
+        bin_t uncle = pos.sibling();
         evbuffer_add_8(evb, SWIFT_ETH_HASH);
-        evbuffer_add_32be(evb, (uint32_t)uncle);
+        evbuffer_add_32be(evb, bin_toUInt32(uncle));
         evbuffer_add_hash(evb,  transfer->file().hash(uncle) );
 	pos = pos.parent();
     }
@@ -130,15 +132,15 @@ void EthernetSwift::Data(tint channel, const bin64_t& range,
 	evb = evbuffer_new();
     }
     evbuffer_add_8(evb, SWIFT_ETH_DATA);
-    evbuffer_add_32be(evb, range.to32());
+    evbuffer_add_32be(evb, bin_toUInt32(range));
     evbuffer_add_buffer(evb, buf);
     msgs.push_back(evb);
 }
 
-void EthernetSwift::Have(tint channel, const bin64_t& range) {
+void EthernetSwift::Have(tint channel, const bin_t& range) {
 }
 
-void EthernetSwift::Ack(tint channel, const bin64_t& range) {
+void EthernetSwift::Ack(tint channel, const bin_t& range) {
 }
 
 void EthernetSwift::Peer(tint channel, const Address& addr) {
@@ -172,7 +174,7 @@ void EthernetSwift::OnHandshake(const unsigned char *srcmac,
 	return;
     }
     uint32_t rev_channel = evbuffer_remove_32be(evb);
-    bin64_t range = evbuffer_remove_32be(evb);
+    bin_t range = bin_fromUInt32(evbuffer_remove_32be(evb));
     Sha1Hash hash = evbuffer_remove_hash(evb);
     FileTransfer* file = NULL;
     for(int i=0; i<FileTransfer::files.size(); i++)
@@ -206,13 +208,13 @@ void EthernetSwift::OnOpen(const unsigned char *srcmac,
     }
     memcpy(peer_mac, srcmac, ETH_ALEN);
     peer_channel = evbuffer_remove_32be(evb);
-    bin64_t range = evbuffer_remove_32be(evb);
+    bin_t range = bin_fromUInt32(evbuffer_remove_32be(evb));
     Sha1Hash hash = evbuffer_remove_hash(evb);
     if (transfer->file().root_hash()!=hash) {
 	eprintf("%s #%u incorrect hash in eth open\n", tintstr(), my_channel);
 	return;
     }
-    bin64_t reqrange = transfer->picker().Pick(rec_ranges, 1, 0);
+    bin_t reqrange = transfer->picker().Pick(rec_ranges, 1, 0);
     Request(peer_channel, reqrange);
 }
 
@@ -224,8 +226,10 @@ void EthernetSwift::OnRequest(const unsigned char *srcmac,
 	eprintf("%s #0 incorrect size in eth request\n", tintstr());
 	return;
     }
-    bin64_t range = evbuffer_remove_32be(evb);
-    dprintf("%s #%u -request %s\n",tintstr(),my_channel,range.str());
+    bin_t range = bin_fromUInt32(evbuffer_remove_32be(evb));
+    char bin_name_buf[32];
+    dprintf("%s #%u -request %s\n",tintstr(), my_channel,
+	    range.str(bin_name_buf));
     while (!range.is_base())
 	range = range.left();
     struct evbuffer_iovec vec;
@@ -248,11 +252,11 @@ void EthernetSwift::OnRequest(const unsigned char *srcmac,
 
 void EthernetSwift::OnHash(const unsigned char *srcmac,
 			   const unsigned char *dstmac, struct evbuffer *evb) {
-   if (evbuffer_get_length(evb) < 4 + Sha1Hash::SIZE) {
+    if (evbuffer_get_length(evb) < 4 + Sha1Hash::SIZE) {
 	eprintf("%s #0 incorrect size in eth has\n", tintstr());
 	return;
     }
-    bin64_t range = evbuffer_remove_32be(evb);
+    bin_t range = bin_fromUInt32(evbuffer_remove_32be(evb));
     rec_ranges.set(range);
     Sha1Hash hash = evbuffer_remove_hash(evb);
     transfer->file().OfferHash(range, hash);
@@ -265,17 +269,20 @@ void EthernetSwift::OnData(const unsigned char *srcmac,
 	eprintf("%s #0 incorrect size in eth data\n", tintstr());
 	return;
     }
-    bin64_t range = evbuffer_remove_32be(evb);
+    bin_t range = bin_fromUInt32(evbuffer_remove_32be(evb));
     int length = evbuffer_get_length(evb);
     uint8_t *data = evbuffer_pullup(evb, length);
+    char bin_name_buf[32];
     if (transfer->file().OfferData(range, (char*)data, length)) {
-	dprintf("%s #%u -data %s\n",tintstr(),my_channel,range.str());
+	dprintf("%s #%u -data %s\n",tintstr(), my_channel,
+		range.str(bin_name_buf));
     } else {
-	dprintf("%s #%u !data %s\n",tintstr(),my_channel,range.str());
+	dprintf("%s #%u !data %s\n",tintstr(), my_channel,
+		range.str(bin_name_buf));
     }
     if (!swift::IsComplete(transfer->file().file_descriptor())) {
-	bin64_t reqrange = transfer->picker().Pick(rec_ranges, 1, 0);
-	if (reqrange != bin64_t::NONE) { 
+	bin_t reqrange = transfer->picker().Pick(rec_ranges, 1, 0);
+	if (!reqrange.is_none()) { 
 	    Request(peer_channel, reqrange);
 	} else
 	    Close(peer_channel);
@@ -304,6 +311,8 @@ int EthernetSwift::SendTo(SOCKET sock, const Address& addr,
 		   sizeof(struct sockaddr_ll));
     if (r<0)
         perror("EthernetSwift::Send - can't send");
+    frames_up++;
+    Channel::bytes_up += length;
     Channel::Time();
     return r;
 }
@@ -357,7 +366,6 @@ void EthernetSwift::Send() {
 
 void EthernetSwift::Recv(unsigned char *srcmac, unsigned char *dstmac,
 				   struct evbuffer *evb) {
-    Channel::Time();
     while (evbuffer_get_length(evb) > 0) {
 	uint8_t type = evbuffer_remove_8(evb);
 	switch (type) {
@@ -402,6 +410,8 @@ void EthernetSwift::RecvEthCallback(int fd, short event, void *arg) {
 	    evbuffer_remove(evb, srcmac, ETH_ALEN);
 	    if (evbuffer_remove_16be(evb) == 0x0000) {// TODO: swift
 						      // protocol num?
+		frames_down++;
+		Channel::bytes_down += evbuffer_get_length(evb);
 		if (memcmp(dstmac, brmac, ETH_ALEN)) {
 		    uint32_t channel =
 			Channel::DecodeID(evbuffer_remove_32be(evb));

@@ -27,7 +27,8 @@ int main (int argc, char** argv) {
         {"hash",    required_argument, 0, 'h'},
         {"file",    required_argument, 0, 'f'},
         {"daemon",  no_argument, 0, 'd'},
-        {"ethdev",  no_argument, 0, 'e'},
+        {"ethdev",  required_argument, 0, 'e'},
+        {"interval",  required_argument, 0, 'i'},
         {"listen",  required_argument, 0, 'l'},
         {"tracker", required_argument, 0, 't'},
         {"debug",   no_argument, 0, 'D'},
@@ -45,12 +46,13 @@ int main (int argc, char** argv) {
     Address tracker;
     Address http_gw;
     tint wait_time = 0;
+    tint send_interval = 0;
     
     LibraryInit();
     Channel::evbase = event_base_new();
 
     int c;
-    while ( -1 != (c = getopt_long (argc, argv, ":h:f:e:dl:t:Dpg::w::", long_options, 0)) ) {
+    while ( -1 != (c = getopt_long (argc, argv, ":h:f:e:i:dl:t:Dpg::w::", long_options, 0)) ) {
         
         switch (c) {
             case 'h':
@@ -66,6 +68,11 @@ int main (int argc, char** argv) {
             case 'e':
                 devname = strdup(optarg);
                 break;
+	    case 'i':
+		send_interval = atoi(optarg) * TINT_MSEC;
+		if (send_interval <= 0)
+		    quit("invalid send interval value\n");
+		break;
             case 'd':
                 daemonize = true;
                 break;
@@ -130,8 +137,11 @@ int main (int argc, char** argv) {
     if (tracker!=Address())
         SetTracker(tracker);
 
-    if (devname)
+    if (devname) {
+	if (send_interval)
+	    EthernetSwift::send_interval = send_interval;
 	EthernetSwift::Init(devname, false);
+    }
 
     // if (http_gw!=Address())
     //     InstallHTTPGateway(http_gw);
@@ -153,7 +163,9 @@ int main (int argc, char** argv) {
         fprintf(stderr,"  -l, --listen\t[ip:|host:]port to listen to (default: random)\n");
         fprintf(stderr,"  -t, --tracker\t[ip:|host:]port of the tracker (default: none)\n");
         fprintf(stderr,"  -e, --ethdev\tnetwork device name used in swift over ethernet (default: none)\n");
+	fprintf(stderr,"  -i, --interval\tsend interval (ms) of ethernet frames in swift over ethernet\n");
         fprintf(stderr,"  -D, --debug\tfile name for debugging logs (default: stdout)\n");
+        fprintf(stderr,"  -d, --daemon\trun as daemon\n");
         fprintf(stderr,"  -p, --progress\treport transfer progress\n");
         fprintf(stderr,"  -g, --http\t[ip:|host:]port to bind HTTP gateway to (default localhost:8080)\n");
         fprintf(stderr,"  -w, --wait\tlimit running time, e.g. 1[DHMs] (default: infinite with -l, -g)\n");
@@ -187,12 +199,13 @@ int main (int argc, char** argv) {
 
 void swift::ReportCallback(int fd, short event, void *arg) {
     fprintf(stderr,
-	    "%s %lli of %lli (seq %lli) %lli dgram %lli bytes up, "	\
-	    "%lli dgram %lli bytes down\n",
+	    "%s %lli of %lli (seq %lli) %lli dgram %lli ethfram %lli bytes up, "	\
+	    "%lli dgram %lli ethfram %lli bytes down\n",
 	    IsComplete(file) ? "DONE" : "done",
 	    Complete(file), Size(file), SeqComplete(file),
-	    Channel::dgrams_up, Channel::bytes_up,
-	    Channel::dgrams_down, Channel::bytes_down );
+	    Channel::dgrams_up, EthernetSwift::frames_up, Channel::bytes_up,
+	    Channel::dgrams_down, EthernetSwift::frames_down,
+	    Channel::bytes_down );
     evtimer_add(&evreport, tint2tv(TINT_SEC));
 }
 

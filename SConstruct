@@ -16,7 +16,7 @@ DEBUG = True
 TestDir='tests'
 
 target = 'swift'
-source = [ 'bin64.cpp','sha1.cpp','hashtree.cpp','bins.cpp',
+source = [ 'bin.cpp','sha1.cpp','hashtree.cpp','binmap.cpp', 'binheap.cpp',
     'transfer.cpp', 'channel.cpp', 'sendrecv.cpp', 'send_control.cpp',
     'compat.cpp', 'swift_ether.cpp']
 

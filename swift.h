@@ -62,9 +62,10 @@
 #include <event2/event.h>
 #include <event2/event_struct.h>
 #include <event2/buffer.h>
-#include "bin64.h"
-#include "bins.h"
+#include "bin.h"
+#include "binmap.h"
 #include "hashtree.h"
+#include "compat.h"
 
 namespace swift {
 
@@ -191,11 +192,11 @@ namespace swift {
         etc). */
     struct tintbin {
         tint    time;
-        bin64_t bin;
+        bin_t bin;
         tintbin(const tintbin& b) : time(b.time), bin(b.bin) {}
-        tintbin() : time(TINT_NEVER), bin(bin64_t::NONE) {}
-        tintbin(tint time_, bin64_t bin_) : time(time_), bin(bin_) {}
-        tintbin(bin64_t bin_) : time(NOW), bin(bin_) {}
+        tintbin() : time(TINT_NEVER), bin(bin_t::NONE) {}
+        tintbin(tint time_, bin_t bin_) : time(time_), bin(bin_) {}
+        tintbin(bin_t bin_) : time(NOW), bin(bin_) {}
         bool operator < (const tintbin& b) const
 	{ return time > b.time; }
         bool operator == (const tintbin& b) const
@@ -205,7 +206,7 @@ namespace swift {
     };
 
     typedef std::deque<tintbin> tbqueue;
-    typedef std::deque<bin64_t> binqueue;
+    typedef std::deque<bin_t> binqueue;
     typedef Address   Address;
 
     /** A heap (priority queue) for timestamped bin numbers (tintbins). */
@@ -247,7 +248,7 @@ namespace swift {
     class PiecePicker;
     class CongestionController;
     class PeerSelector;
-    typedef void (*ProgressCallback) (int transfer, bin64_t bin);
+    typedef void (*ProgressCallback) (int transfer, bin_t bin);
 
 
     /** A class representing single file transfer. */
@@ -317,7 +318,7 @@ namespace swift {
         int             cb_installed;
 
     public:
-        void            OnDataIn (bin64_t pos);
+        void            OnDataIn (bin_t pos);
         void            OnPexIn (const Address& addr);
 
         friend class Channel;
@@ -330,7 +331,7 @@ namespace swift {
         friend void    Close (int fd) ;
         friend void AddProgressCallback (int transfer,ProgressCallback cb,uint8_t agg);
         friend void RemoveProgressCallback (int transfer,ProgressCallback cb);
-        friend void ExternallyRetrieved (int transfer,bin64_t piece);
+        friend void ExternallyRetrieved (int transfer,bin_t piece);
     };
 
 
@@ -346,8 +347,8 @@ namespace swift {
          *  @param  max_width   maximum number of packets to ask for
          *  @param  expires     (not used currently) when to consider request expired
          *  @return             the bin number to request */
-        virtual bin64_t Pick (binmap_t& offered, uint64_t max_width, tint expires) = 0;
-        virtual void LimitRange (bin64_t range) = 0;
+        virtual bin_t Pick (binmap_t& offered, uint64_t max_width, tint expires) = 0;
+        virtual void LimitRange (bin_t range) = 0;
         virtual ~PiecePicker() {}
     };
 
@@ -362,8 +363,8 @@ namespace swift {
     class DataStorer {
     public:
         DataStorer (const Sha1Hash& id, size_t size);
-        virtual size_t    ReadData (bin64_t pos,uint8_t** buf) = 0;
-        virtual size_t    WriteData (bin64_t pos, uint8_t* buf, size_t len) = 0;
+        virtual size_t    ReadData (bin_t pos,uint8_t** buf) = 0;
+        virtual size_t    WriteData (bin_t pos, uint8_t* buf, size_t len) = 0;
     };
 
 
@@ -427,17 +428,17 @@ namespace swift {
 
         void        OnAck (struct evbuffer *evb);
         void        OnHave (struct evbuffer *evb);
-        bin64_t     OnData (struct evbuffer *evb);
+        bin_t       OnData (struct evbuffer *evb);
         void        OnHint (struct evbuffer *evb);
         void        OnHash (struct evbuffer *evb);
         void        OnPex (struct evbuffer *evb);
         void        OnHandshake (struct evbuffer *evb);
         void        AddHandshake (struct evbuffer *evb);
-        bin64_t     AddData (struct evbuffer *evb);
+        bin_t       AddData (struct evbuffer *evb);
         void        AddAck (struct evbuffer *evb);
         void        AddHave (struct evbuffer *evb);
         void        AddHint (struct evbuffer *evb);
-        void        AddUncleHashes (struct evbuffer *evb, bin64_t pos);
+        void        AddUncleHashes (struct evbuffer *evb, bin_t pos);
         void        AddPeakHashes (struct evbuffer *evb);
         void        AddPex (struct evbuffer *evb);
 
@@ -495,17 +496,17 @@ namespace swift {
         uint32_t    peer_channel_id_;
         bool        own_id_mentioned_;
         /**    Peer's progress, based on acknowledgements. */
-        binmap_t        ack_in_;
+        binmap_t    ack_in_;
         /**    Last data received; needs to be acked immediately. */
         tintbin     data_in_;
-        bin64_t     data_in_dbl_;
+        bin_t       data_in_dbl_;
         /** The history of data sent and still unacknowledged. */
         tbqueue     data_out_;
         /** Timeouted data (potentially to be retransmitted). */
         tbqueue     data_out_tmo_;
-        bin64_t     data_out_cap_;
+        bin_t       data_out_cap_;
         /** Index in the history array. */
-        binmap_t        have_out_;
+        binmap_t    have_out_;
         /**    Transmit schedule: in most cases filled with the peer's hints */
         tbqueue     hint_in_;
         /** Hints sent (to detect and reschedule ignored hints). */
@@ -551,11 +552,11 @@ namespace swift {
             return TINT_SEC / dip_avg_ * 1024;
         }
         /** Get a request for one packet from the queue of peer's requests. */
-        bin64_t     DequeueHint();
-        bin64_t     ImposeHint();
+        bin_t       DequeueHint();
+        bin_t       ImposeHint();
         void        TimeoutDataOut ();
         void        CleanStaleHintOut();
-        void        CleanHintOut(bin64_t pos);
+        void        CleanHintOut(bin_t pos);
         void        Reschedule();
 
         static PeerSelector* peer_selector;
@@ -614,7 +615,7 @@ namespace swift {
 
     void AddProgressCallback (int transfer,ProgressCallback cb,uint8_t agg);
     void RemoveProgressCallback (int transfer,ProgressCallback cb);
-    void ExternallyRetrieved (int transfer,bin64_t piece);
+    void ExternallyRetrieved (int transfer,bin_t piece);
 
     //uint32_t Width (const tbinvec& v);
 

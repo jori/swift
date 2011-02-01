@@ -1,6 +1,7 @@
 #ifndef SWIFT_ETHER_H
 #define SWIFT_ETHER_H
 #include <string.h>
+#include "bin_utils.h"
 #include "swift.h"
 
 namespace swift {
@@ -26,11 +27,11 @@ public:
     static bool Init(const std::string& dev, bool selftst=false);
     static bool IsInit() { return initialised; }
     void Open(tint channel, tint rev_channel, const Sha1Hash& hash);
-    void Request(tint channel, const bin64_t& range);
+    void Request(tint channel, const bin_t& range);
     void Hash(tint channel, const Sha1Hash& hash);
-    void Data(tint channel, const bin64_t& range, struct evbuffer* buf);
-    void Have(tint channel, const bin64_t& range);
-    void Ack(tint channel, const bin64_t& range);
+    void Data(tint channel, const bin_t& range, struct evbuffer* buf);
+    void Have(tint channel, const bin_t& range);
+    void Ack(tint channel, const bin_t& range);
     void Peer(tint channel, const Address& addr);
     void Close(tint channel);
     static void OnHandshake(const unsigned char *srcmac,
@@ -45,6 +46,8 @@ public:
 		struct evbuffer *evb);
     void OnClose(const unsigned char *srcmac, const unsigned char *dstmac,
 		 struct evbuffer *evb);
+    static uint64_t frames_up, frames_down;
+    static tint send_interval;
 private:
     static bool initialised;
     static bool selftest;
@@ -63,7 +66,6 @@ private:
     struct event evsendeth;
     static struct event evrecveth;
     static tint last_send_time;
-    static tint send_interval;
     void AddHdr(struct evbuffer *evb, const unsigned char *srcmac,
 		const unsigned char *dstmac);
     static int SendTo(SOCKET sock, const Address& addr, struct evbuffer *evb);
