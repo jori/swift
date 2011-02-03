@@ -70,7 +70,7 @@ int main (int argc, char** argv) {
                 break;
 	    case 'i':
 		send_interval = atoi(optarg) * TINT_MSEC;
-		if (send_interval <= 0)
+		if (send_interval < 0)
 		    quit("invalid send interval value\n");
 		break;
             case 'd':
@@ -163,7 +163,7 @@ int main (int argc, char** argv) {
         fprintf(stderr,"  -l, --listen\t[ip:|host:]port to listen to (default: random)\n");
         fprintf(stderr,"  -t, --tracker\t[ip:|host:]port of the tracker (default: none)\n");
         fprintf(stderr,"  -e, --ethdev\tnetwork device name used in swift over ethernet (default: none)\n");
-	fprintf(stderr,"  -i, --interval\tsend interval (ms) of ethernet frames in swift over ethernet\n");
+	fprintf(stderr,"  -i, --interval\tsend interval (ms) of ethernet frames in swift over ethernet (default: 0)\n");
         fprintf(stderr,"  -D, --debug\tfile name for debugging logs (default: stdout)\n");
         fprintf(stderr,"  -d, --daemon\trun as daemon\n");
         fprintf(stderr,"  -p, --progress\treport transfer progress\n");

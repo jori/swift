@@ -7,6 +7,7 @@
 namespace swift {
 
 #define MAX_ETH_FRAME_LEN (ETH_FRAME_LEN + ETH_FCS_LEN)
+#define SWIFT_ETH_MAX_DATA 1024
 
 typedef enum {
     SWIFT_ETH_OPEN = SWIFT_MESSAGE_COUNT + 1,
@@ -17,7 +18,8 @@ typedef enum {
     SWIFT_ETH_ACK = SWIFT_MESSAGE_COUNT + 6,
     SWIFT_ETH_PEER = SWIFT_MESSAGE_COUNT + 7,
     SWIFT_ETH_CLOSE = SWIFT_MESSAGE_COUNT + 8,
-    SWIFT_ETH_MESSAGE_COUNT = SWIFT_MESSAGE_COUNT + 9
+    SWIFT_ETH_END = SWIFT_MESSAGE_COUNT + 9, // Marks end of message in frame
+    SWIFT_ETH_MESSAGE_COUNT = SWIFT_MESSAGE_COUNT + 10
 } eth_messageid_t;
 
 class EthernetSwift {
