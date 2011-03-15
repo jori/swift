@@ -105,7 +105,7 @@ SOCKET Channel::Bind (Address address, sckrwecb_t callbacks) {
     return fd;
 }
 
-int Channel::SendTo (SOCKET sock, Address addr, struct evbuffer *evb) {
+int Channel::SendTo (SOCKET sock, const Address& addr, struct evbuffer *evb) {
     int length = evbuffer_get_length(evb);
     int r = sendto(sock,(const char *)evbuffer_pullup(evb, length),length,0,
                    (struct sockaddr*)&(addr.addr),sizeof(struct sockaddr_in));
@@ -334,6 +334,9 @@ const Sha1Hash& swift::RootMerkleHash (int file) {
     return trans->file().root_hash();
 }
 
+int swift::evbuffer_add_string(struct evbuffer *evb, std::string str) {
+    return evbuffer_add(evb, str.c_str(), str.size());
+}
 
 int swift::evbuffer_add_8(struct evbuffer *evb, uint8_t b) {
     return evbuffer_add(evb, &b, 1);

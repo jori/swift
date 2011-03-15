@@ -377,7 +377,7 @@ namespace swift {
 	/** the current time */
 	static tint Time();
 
-	static int SendTo(SOCKET sock, Address addr, struct evbuffer *evb);
+	static int SendTo(SOCKET sock, const Address& addr, struct evbuffer *evb);
 	static int RecvFrom(SOCKET sock, Address& addr, struct evbuffer *evb);
 
         void        Recv (struct evbuffer *evb);
@@ -584,6 +584,7 @@ namespace swift {
     void ReportCallback(int fd, short event, void *arg);
     void EndCallback(int fd, short event, void *arg);
 
+    int evbuffer_add_string(struct evbuffer *evb, std::string str);
     int evbuffer_add_8(struct evbuffer *evb, uint8_t b);
     int evbuffer_add_16be(struct evbuffer *evb, uint16_t w);
     int evbuffer_add_32be(struct evbuffer *evb, uint32_t i);
