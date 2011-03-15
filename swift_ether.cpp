@@ -26,7 +26,7 @@ EthernetSwift::EthernetSwift(FileTransfer *ft) {
     sessions.push_back(this);
     transfer->hs_in_.push_back(bin_t(my_channel));
     evtimer_assign(&evsendeth,Channel::evbase,&SendEthCallback,this);
-    if (!swift::IsComplete(transfer->file().file_descriptor()))
+    if (!transfer->file().is_complete())
 	Open(0, Channel::EncodeID(my_channel), transfer->file().root_hash());
     Channel::Time();
     evtimer_add(&evsendeth,tint2tv(NextSendTime()-NOW));
@@ -204,8 +204,7 @@ void EthernetSwift::OnHandshake(const unsigned char *srcmac,
     for(int i=0; i<FileTransfer::files.size(); i++)
         if (FileTransfer::files[i]
 	    && FileTransfer::files[i]->root_hash()==hash
-	    && swift::IsComplete(FileTransfer::files[i]->
-				 file().file_descriptor())) {
+	    && FileTransfer::files[i]->file().is_complete()) {
 	    file = FileTransfer::files[i];
 	    break;
 	}
@@ -315,7 +314,7 @@ void EthernetSwift::OnData(const unsigned char *srcmac,
 	dprintf("%s #%u !data %s\n",tintstr(), my_channel,
 		range.str(bin_name_buf));
     }
-    if (!swift::IsComplete(transfer->file().file_descriptor())) {
+    if (!transfer->file().is_complete()) {
 	bin_t reqrange = transfer->picker().Pick(rec_ranges, 1, 0);
 	if (!reqrange.is_none()) {
 	    Request(peer_channel, reqrange);

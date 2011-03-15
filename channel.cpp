@@ -277,8 +277,7 @@ int      swift::Open (const char* filename, const Sha1Hash& hash) {
             new Channel(ft);
 
 	// Start swift over ethernet peer
-	if (EthernetSwift::IsInit() &&
-	    !IsComplete(ft->file().file_descriptor()))
+	if (EthernetSwift::IsInit() && !ft->file().is_complete())
 	    new EthernetSwift(ft);
 
         return ft->file().file_descriptor();
